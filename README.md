@@ -2,6 +2,19 @@
 
 Composable Python library and CLI for building FHIR SDC Questionnaires, with an MCP server for interactive previews.
 
+## Quick start: Claude Code plugin
+
+Install everything (MCP server + skill + CLI) as a plugin:
+
+```bash
+claude plugin install --url https://github.com/Tiro-health/fhir-sdc-tools
+```
+
+This gives you:
+- `render-questionnaire` MCP tool for interactive previews
+- `sdc-builder` skill that teaches Claude to build questionnaires using the Python API
+- `sdc` CLI for shell-based workflows
+
 ## Quick start: Claude Desktop / claude.ai
 
 Add to your Claude Desktop config (`claude_desktop_config.json`):

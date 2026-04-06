@@ -1,0 +1,15 @@
+{
+  "name": "fhir-sdc-tools",
+  "version": "0.2.0",
+  "description": "Build and preview FHIR SDC Questionnaires with a composable Python library, CLI, and interactive MCP renderer",
+  "author": {
+    "name": "Tiro Health",
+    "url": "https://github.com/Tiro-health"
+  },
+  "homepage": "https://github.com/Tiro-health/fhir-sdc-tools",
+  "repository": "https://github.com/Tiro-health/fhir-sdc-tools",
+  "license": "MIT",
+  "keywords": ["fhir", "sdc", "questionnaire", "healthcare", "hl7"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
