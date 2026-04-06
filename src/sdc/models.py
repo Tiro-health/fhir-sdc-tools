@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from enum import StrEnum
+from functools import partial
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -171,6 +173,12 @@ class Questionnaire(BaseModel):
     item: list[QuestionnaireItem] | None = None
     extension: list[Extension] | None = None
 
+    def __or__(self, fn: Callable[[Questionnaire], Questionnaire]) -> Questionnaire:
+        """Pipe operator: ``q | step(add_item, ...)`` calls *fn(self)*."""
+        if not callable(fn):
+            return NotImplemented
+        return fn(self)
+
     @property
     def fhir_version(self) -> FhirVersion | None:
         """Detect FHIR version from meta.profile, or None if not set."""
@@ -189,6 +197,23 @@ def resolve_fhir_version(q: Questionnaire | None = None) -> FhirVersion:
     if env in ("R4", "R5"):
         return FhirVersion(env)
     return FhirVersion.R4
+
+
+def step(fn: Callable[..., Questionnaire], *args: object, **kwargs: object) -> partial:
+    """Create a pipe-ready step from a transform function.
+
+    Usage::
+
+        q = (
+            Questionnaire(url="http://example.com")
+            | step(add_item, new_item=item)
+            | step(set_meta, publisher="Acme")
+        )
+
+    This is equivalent to ``add_item(q, new_item=item)`` — the first
+    positional argument (*q*) is deferred and supplied by the ``|`` operator.
+    """
+    return partial(fn, *args, **kwargs)
 
 
 def set_fhir_version(q: Questionnaire, version: FhirVersion) -> Questionnaire:

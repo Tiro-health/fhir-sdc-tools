@@ -14,6 +14,7 @@ from sdc.models import (
     QuestionnaireItem,
     QuestionnaireItemType,
     set_fhir_version,
+    step,
 )
 from sdc.transforms import (
     add_answer_option,
@@ -419,3 +420,65 @@ class TestAddTranslation:
         q = _make_q_with_choice_item()
         with pytest.raises(ValueError, match="No answerOption with code"):
             add_translation(q, "nl", "test", link_id="1", answer_code="nonexistent")
+
+
+class TestPipeOperator:
+    def test_single_step(self, empty_questionnaire: Questionnaire) -> None:
+        item = QuestionnaireItem(
+            link_id="1", text="Name", type=QuestionnaireItemType.STRING
+        )
+        result = empty_questionnaire | step(add_item, new_item=item)
+        assert len(result.item) == 1
+        assert result.item[0].link_id == "1"
+
+    def test_chained_steps(self, empty_questionnaire: Questionnaire) -> None:
+        item1 = QuestionnaireItem(
+            link_id="1", text="Name", type=QuestionnaireItemType.STRING
+        )
+        item2 = QuestionnaireItem(
+            link_id="2", text="Age", type=QuestionnaireItemType.INTEGER
+        )
+        result = (
+            empty_questionnaire
+            | step(add_item, new_item=item1)
+            | step(add_item, new_item=item2)
+            | step(set_meta, publisher="Acme")
+        )
+        assert len(result.item) == 2
+        assert result.publisher == "Acme"
+
+    def test_nested_items(self, empty_questionnaire: Questionnaire) -> None:
+        group = QuestionnaireItem(
+            link_id="g", text="Group", type=QuestionnaireItemType.GROUP
+        )
+        child = QuestionnaireItem(
+            link_id="g.1", text="Child", type=QuestionnaireItemType.STRING
+        )
+        result = (
+            empty_questionnaire
+            | step(add_item, new_item=group)
+            | step(add_item, new_item=child, parent_link_id="g")
+        )
+        parent = find_item(result.item, "g")
+        assert len(parent.item) == 1
+        assert parent.item[0].link_id == "g.1"
+
+    def test_with_lambda(self, empty_questionnaire: Questionnaire) -> None:
+        item = QuestionnaireItem(
+            link_id="1", text="Name", type=QuestionnaireItemType.STRING
+        )
+        result = empty_questionnaire | (lambda q: add_item(q, item))
+        assert len(result.item) == 1
+
+    def test_original_not_mutated(self, empty_questionnaire: Questionnaire) -> None:
+        item = QuestionnaireItem(
+            link_id="1", text="Name", type=QuestionnaireItemType.STRING
+        )
+        empty_questionnaire | step(add_item, new_item=item)
+        assert empty_questionnaire.item is None
+
+    def test_not_implemented_for_non_callable(
+        self, empty_questionnaire: Questionnaire
+    ) -> None:
+        with pytest.raises(TypeError):
+            empty_questionnaire | 42

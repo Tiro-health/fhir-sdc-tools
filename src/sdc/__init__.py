@@ -13,6 +13,7 @@ from sdc.models import (
     SDC_URLS,
     resolve_fhir_version,
     set_fhir_version,
+    step,
 )
 from sdc.transforms import (
     add_answer_option,
@@ -44,6 +45,7 @@ __all__ = [
     "SDC_URLS",
     "resolve_fhir_version",
     "set_fhir_version",
+    "step",
     # Transforms
     "add_answer_option",
     "add_enable_when",
