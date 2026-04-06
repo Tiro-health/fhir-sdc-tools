@@ -1,5 +1,5 @@
 [project]
-name = "fhir-sdc"
+name = "fhir-sdc-tools"
 version = "0.1.0"
 description = "Composable Python library and CLI for building FHIR SDC Questionnaires"
 readme = "README.md"
