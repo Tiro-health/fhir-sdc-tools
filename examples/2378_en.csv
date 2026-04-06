@@ -1,0 +1,183 @@
+text,en
+Mondholte tumoren,Oral cavity tumors
+Staal informatie,Specimen information
+Identificatie nummer,Identification number
+Aanvraagdatum,Request date
+Pathologische gegevens,Pathological data
+Neoadjuvante therapie,Neoadjuvant therapy
+ja,yes
+nee,no
+niet aangegeven,not specified
+Tumorlokalisatie,Tumor localization
+Tumorlokalisatie,Tumor localization
+lip,lip
+mondholte,oral cavity
+Lip locatie,Lip location
+mucosa onderlip,mucosa of lower lip
+mucosa van bovenlip,mucosa of upper lip
+lip (NNO),lip (NOS)
+niet van toepassing,not applicable
+Mondholte locatie,Oral cavity location
+lip,lip
+zacht gehemelte,soft palate
+huig,uvula
+hard gehemelte,hard palate
+keelamandel,tonsil
+retromolaire gebied,retromolar area
+tandvlees,gingiva
+mondbodem,floor of mouth
+tanden,teeth
+voorste 2/3 tong,anterior 2/3 of tongue
+wangslijmvlies,buccal mucosa
+andere,other
+niet van toepassing,not applicable
+Specificeer mondholtelocatie,Specify oral cavity location
+Lateraliteit,Laterality
+links,left
+rechts,right
+middenlijn,midline
+niet aangegeven,not specified
+Focaliteit,Focality
+unifocaal,unifocal
+multifocaal,multifocal
+kan niet beoordeeld worden,cannot be assessed
+Aantal foci,Number of foci
+Specificeer focaliteit,Specify focality
+Tumorafmetingen,Tumor dimensions
+kan bepaald worden,can be determined
+kan niet bepaald worden,cannot be determined
+Maximale tumordimensie,Maximum tumor dimension
+Specificeer tumorafmeting,Specify tumor dimension
+Histologisch tumortype,Histological tumor type
+plaveiselcelcarcinoom,squamous cell carcinoma
+spoelcellig plaveiselcelcarcinoom,spindle cell squamous cell carcinoma
+basaloïd plaveiselcelcarcinoom,basaloid squamous cell carcinoma
+acantholytisch plaveiselcelcarcinoom,acantholytic squamous cell carcinoma
+adenosquameus carcinoom,adenosquamous carcinoma
+papillair plaveiselcelcarcinoom,papillary squamous cell carcinoma
+lymfo-epitheliaal plaveiselcelcarcinoom,lymphoepithelial squamous cell carcinoma
+verruceus carcinoom,verrucous carcinoma
+carcinoma cuniculatum,carcinoma cuniculatum
+speekselkliercarcinoom,salivary gland carcinoma
+geen residuele tumor,no residual tumor
+niet van toepassing,not applicable
+Specificeer tumortype,Specify tumor type
+Specificeer niet van toepassing,Specify not applicable
+Differentiatiegraad,Differentiation grade
+niet van toepassing,not applicable
+"G1: goed gedifferentieerd, laaggradig","G1: well differentiated, low grade"
+G2: matig gedifferentieerd,G2: moderately differentiated
+"G3: weinig gedifferentieerd, hooggradig","G3: poorly differentiated, high grade"
+ongedifferentieerd,undifferentiated
+hooggradige transformatie,high-grade transformation
+kan niet beoordeeld worden,cannot be assessed
+Specificeer differentiatiegraad,Specify differentiation grade
+Worst pattern of invasion (WPOI),Worst pattern of invasion (WPOI)
+niet van toepassing,not applicable
+WPOI 1,WPOI 1
+WPOI 2,WPOI 2
+WPOI 3,WPOI 3
+WPOI 4,WPOI 4
+WPOI 5,WPOI 5
+Invasiediepte,Depth of invasion
+≤ 5 mm,≤ 5 mm
+> 5 mm en ≤ 10 mm,> 5 mm and ≤ 10 mm
+> 10 mm,> 10 mm
+kan niet beoordeeld worden,cannot be assessed
+Specificeer invasiediepte,Specify depth of invasion
+Patroon van invasie,Pattern of invasion
+cohesief,cohesive
+niet-cohesief,non-cohesive
+sprieterig,tentacular
+Lokale uitbreiding,Local extension
+niet aangetoond,not detected
+aangetoond,detected
+kan niet beoordeeld worden,cannot be assessed
+niet van toepassing,not applicable
+Specificeer lokale uitbreiding,Specify local extension
+Invasie van bot,Bone invasion
+niet aanwezig,absent
+aanwezig,present
+Invasie in huid van aangezicht/nek,Invasion into skin of face/neck
+niet aanwezig,absent
+aanwezig,present
+Invasie in mondbodem (lip),Invasion into floor of mouth (lip)
+niet aanwezig,absent
+aanwezig,present
+Invasie in sinus maxillaris (mondholte),Invasion into maxillary sinus (oral cavity)
+niet aanwezig,absent
+aanwezig,present
+Lymfovasculaire invasie,Lymphovascular invasion
+niet aangetoond,not detected
+onderscheid lymfevat- en bloedvatinvasie niet mogelijk,distinction between lymphatic and blood vessel invasion not possible
+onderscheid lymfevat- en bloedvatinvasie mogelijk,distinction between lymphatic and blood vessel invasion possible
+niet met zekerheid te bepalen,cannot be determined with certainty
+Specificeer onderscheid lymfevat- en bloedvatinvasie,Specify distinction between lymphatic and blood vessel invasion
+lymfevatinvasie,lymphatic invasion
+bloedvatinvasie,blood vessel invasion
+lymfevat- en bloedvatinvasie,lymphatic and blood vessel invasion
+Specificeer lymfovasculaire invasie,Specify lymphovascular invasion
+Perineurale invasie,Perineural invasion
+niet aangetoond,not detected
+aangetoond,detected
+niet met zekerheid te bepalen,cannot be determined with certainty
+Diameter grootste zenuwtak,Diameter of largest nerve branch
+"≤ 0,1 mm",≤ 0.1 mm
+"> 0,1 mm",> 0.1 mm
+Specificeer perineurale invasie,Specify perineural invasion
+Tumorvrije marge invasief carcinoom,Tumor-free margin invasive carcinoma
+Definitieve minimale tumorvrije marge invasief carcinoom,Definitive minimal tumor-free margin invasive carcinoma
+kan beoordeeld worden,can be assessed
+kan niet beoordeeld worden,cannot be assessed
+Definitieve minimale tumorvrije marge,Definitive minimal tumor-free margin
+Specificeer dichtstbijzijnde snedevlak,Specify nearest resection plane
+Specificeer minimale tumorvrije marge invasief carcinoom,Specify minimal tumor-free margin invasive carcinoma
+Minimale vrije marge ernstige dysplasie/in situ carcinoom ,Minimal free margin severe dysplasia/carcinoma in situ
+Definitieve minimale tumorvrije marge invasief carcinoom,Definitive minimal tumor-free margin invasive carcinoma
+kan beoordeeld worden,can be assessed
+kan niet beoordeeld worden,cannot be assessed
+Definitieve minimale tumorvrije marge,Definitive minimal tumor-free margin
+Specificeer dichtstbijzijnde snedevlak,Specify nearest resection plane
+Specificeer minimale tumorvrije marge invasief carcinoom,Specify minimal tumor-free margin invasive carcinoma
+pTNM classificatie,pTNM classification
+Voorvoegsel,Prefix
+geen,none
+multipele primaire tumoren,multiple primary tumors
+recidief,recurrence
+na neoadjuvante therapie,after neoadjuvant therapy
+pT-stage,pT stage
+pTX,pTX
+pT0,pT0
+pTis,pTis
+pT1,pT1
+pT2,pT2
+pT3,pT3
+pT4a,pT4a
+pT4b,pT4b
+mpT-stage,mpT stage
+mpTX,mpTX
+mpT0,mpT0
+mpTis,mpTis
+mpT1,mpT1
+mpT2,mpT2
+mpT3,mpT3
+mpT4a,mpT4a
+mpT4b,mpT4b
+rpT-stage,rpT stage
+rpTX,rpTX
+rpT0,rpT0
+rpTis,rpTis
+rpT1,rpT1
+rpT2,rpT2
+rpT3,rpT3
+rpT4a,rpT4a
+rpT4b,rpT4b
+ypT-stage,ypT stage
+ypTX,ypTX
+ypT0,ypT0
+ypTis,ypTis
+ypT1,ypT1
+ypT2,ypT2
+ypT3,ypT3
+ypT4a,ypT4a
+ypT4b,ypT4b
