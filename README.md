@@ -4,10 +4,11 @@ Composable Python library and CLI for building FHIR SDC Questionnaires, with an 
 
 ## Quick start: Claude Code plugin
 
-Install everything (MCP server + skill + CLI) as a plugin:
+Install everything (MCP server + skill + CLI) as a plugin. Inside Claude Code:
 
-```bash
-claude plugin install --url https://github.com/Tiro-health/fhir-sdc-tools
+```
+/plugin marketplace add Tiro-health/fhir-sdc-tools
+/plugin install fhir-sdc-tools
 ```
 
 This gives you:
