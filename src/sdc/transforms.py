@@ -264,8 +264,8 @@ def _check_item_types(
     for item in items:
         if item.type.value not in valid_types:
             warnings.append(
-                f"Item '{item.link_id}' has type '{item.type}' "
-                f"which is not valid in FHIR {version}."
+                f"Item '{item.link_id}' has type '{item.type.value}' "
+                f"which is not valid in FHIR {version.value}."
             )
         if item.item:
             _check_item_types(item.item, valid_types, version, warnings)
