@@ -1,8 +1,6 @@
 {
-  "mcpServers": {
-    "Tiro Questionnaire": {
-      "command": "uvx",
-      "args": ["--from", "fhir-sdc-tools[mcp]", "fhir-sdc-mcp"]
-    }
+  "tiro-questionnaire": {
+    "command": "uvx",
+    "args": ["--from", "fhir-sdc-tools[mcp]", "fhir-sdc-mcp"]
   }
 }
