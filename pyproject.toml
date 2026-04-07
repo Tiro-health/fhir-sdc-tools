@@ -3,7 +3,7 @@ name = "fhir-sdc-tools"
 version = "0.2.0"
 description = "Composable Python library and CLI for building FHIR SDC Questionnaires"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "MIT"
 authors = [
     { name = "Axel Van Raes" },

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from enum import StrEnum
+from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # --- Enums ---
 
 
-class FhirVersion(StrEnum):
+class FhirVersion(str, Enum):
     R4 = "R4"
     R5 = "R5"
 
@@ -55,7 +55,7 @@ ITEM_TYPES_FOR_VERSION: dict[FhirVersion, set[str]] = {
 }
 
 
-class QuestionnaireItemType(StrEnum):
+class QuestionnaireItemType(str, Enum):
     GROUP = "group"
     DISPLAY = "display"
     BOOLEAN = "boolean"
@@ -77,7 +77,7 @@ class QuestionnaireItemType(StrEnum):
     QUESTION = "question"
 
 
-class EnableWhenOperator(StrEnum):
+class EnableWhenOperator(str, Enum):
     EXISTS = "exists"
     EQUALS = "="
     NOT_EQUALS = "!="
@@ -87,7 +87,7 @@ class EnableWhenOperator(StrEnum):
     LTE = "<="
 
 
-class PublicationStatus(StrEnum):
+class PublicationStatus(str, Enum):
     DRAFT = "draft"
     ACTIVE = "active"
     RETIRED = "retired"
