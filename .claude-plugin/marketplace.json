@@ -12,7 +12,7 @@
   "plugins": [
     {
       "name": "fhir-sdc-tools",
-      "source": ".",
+      "source": "./",
       "description": "Build and preview FHIR SDC Questionnaires with a composable Python library, CLI, and interactive MCP renderer",
       "version": "0.2.0",
       "category": "development",
