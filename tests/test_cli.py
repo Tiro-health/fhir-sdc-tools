@@ -32,6 +32,13 @@ class TestInit:
         assert data["title"] == "Test"
         assert data["status"] == "draft"
 
+    def test_init_without_url(self) -> None:
+        data = run("init", "--title", "No URL Form")
+        assert data["resourceType"] == "Questionnaire"
+        assert "url" not in data
+        assert data["title"] == "No URL Form"
+        assert data["status"] == "draft"
+
     def test_init_with_name(self) -> None:
         data = run(
             "init", "--url", "http://example.org/q1", "--title", "T", "--name", "test"
