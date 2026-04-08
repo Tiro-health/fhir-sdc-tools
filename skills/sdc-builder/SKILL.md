@@ -95,8 +95,8 @@ Use the `render-questionnaire` MCP tool to preview:
 
 ## FHIR Version Notes
 
-- **R4** (default): Uses `choice` and `open-choice` item types for coded answers
-- **R5**: Replaces `choice`/`open-choice` with `coding` type; adds `question` type
+- **R4**: Uses `choice` and `open-choice` item types for coded answers
+- **R5** (default): Replaces `choice`/`open-choice` with `coding` type; adds `question` type
 - Set version explicitly with `set_fhir_version(q, FhirVersion.R4)` or detect from env var `SDC_FHIR_VERSION`
 
 ## Tips

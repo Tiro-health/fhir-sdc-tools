@@ -182,13 +182,13 @@ class Questionnaire(BaseModel):
 
 
 def resolve_fhir_version(q: Questionnaire | None = None) -> FhirVersion:
-    """Resolve FHIR version: questionnaire meta.profile > env var > default R4."""
+    """Resolve FHIR version: questionnaire meta.profile > env var > default R5."""
     if q is not None and q.fhir_version is not None:
         return q.fhir_version
     env = os.environ.get("SDC_FHIR_VERSION", "").upper()
     if env in ("R4", "R5"):
         return FhirVersion(env)
-    return FhirVersion.R4
+    return FhirVersion.R5
 
 
 def set_fhir_version(q: Questionnaire, version: FhirVersion) -> Questionnaire:

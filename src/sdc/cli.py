@@ -107,7 +107,7 @@ Examples:
     "fhir_version",
     type=click.Choice(["R4", "R5"], case_sensitive=False),
     default=None,
-    help="FHIR version (R4 or R5). Falls back to SDC_FHIR_VERSION env var, then R4.",
+    help="FHIR version (R4 or R5). Falls back to SDC_FHIR_VERSION env var, then R5.",
 )
 def init(
     url: str,

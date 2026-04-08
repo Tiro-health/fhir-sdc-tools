@@ -38,9 +38,9 @@ class TestInit:
         )
         assert data["name"] == "test"
 
-    def test_init_default_r4(self) -> None:
+    def test_init_default_r5(self) -> None:
         data = run("init", "--url", "http://e.org", "--title", "T")
-        assert FHIR_VERSION_PROFILES[FhirVersion.R4] in data["meta"]["profile"]
+        assert FHIR_VERSION_PROFILES[FhirVersion.R5] in data["meta"]["profile"]
 
     def test_init_r5(self) -> None:
         data = run(

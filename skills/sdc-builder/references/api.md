@@ -250,7 +250,7 @@ Set FHIR version in meta.profile.
 
 ### resolve_fhir_version(q=None) → FhirVersion
 
-Resolve FHIR version: questionnaire profile > `SDC_FHIR_VERSION` env var > R4 default.
+Resolve FHIR version: questionnaire profile > `SDC_FHIR_VERSION` env var > R5 default.
 
 ## Complete Example: Patient Intake Form
 
