@@ -264,120 +264,82 @@ class TestAnswerOption:
 
 
 class TestExtension:
-    def test_add_by_name(self) -> None:
+    def test_add_hidden(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
-            "item",
-            "add",
-            "--link-id",
-            "1",
-            "--text",
-            "Q1",
-            "--type",
-            "string",
+            "item", "add", "--link-id", "1", "--text", "Q1", "--type", "string",
             input_json=init_json,
         )
         q = run(
-            "extension",
-            "add",
-            "--link-id",
-            "1",
-            "--name",
-            "hidden",
-            "--value-boolean",
-            "true",
+            "extension", "add", "hidden", "--link-id", "1",
             input_json=json.dumps(q),
         )
         ext = q["item"][0]["extension"][0]
-        assert (
-            ext["url"] == "http://hl7.org/fhir/StructureDefinition/questionnaire-hidden"
-        )
+        assert ext["url"] == "http://hl7.org/fhir/StructureDefinition/questionnaire-hidden"
         assert ext["valueBoolean"] is True
 
-    def test_add_expression(self) -> None:
+    def test_add_item_control(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
-            "item",
-            "add",
-            "--link-id",
-            "1",
-            "--text",
-            "BMI",
-            "--type",
-            "decimal",
+            "item", "add", "--link-id", "1", "--text", "Q1", "--type", "choice",
             input_json=init_json,
         )
         q = run(
-            "extension",
-            "add",
-            "--link-id",
-            "1",
-            "--name",
-            "calculatedExpression",
-            "--expression",
-            "%weight / %height.power(2)",
+            "extension", "add", "item-control", "--link-id", "1", "--code", "drop-down",
+            input_json=json.dumps(q),
+        )
+        ext = q["item"][0]["extension"][0]
+        assert ext["url"] == "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl"
+        assert ext["valueCodeableConcept"]["coding"][0]["code"] == "drop-down"
+
+    def test_add_calculated_expression(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "item", "add", "--link-id", "1", "--text", "BMI", "--type", "decimal",
+            input_json=init_json,
+        )
+        q = run(
+            "extension", "add", "calculated-expression",
+            "--link-id", "1",
+            "--expression", "%weight / %height.power(2)",
             input_json=json.dumps(q),
         )
         ext = q["item"][0]["extension"][0]
         assert ext["valueExpression"]["expression"] == "%weight / %height.power(2)"
 
-    def test_add_questionnaire_level(self) -> None:
+    def test_add_variable(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
-            "extension",
-            "add",
-            "--name",
-            "variable",
-            "--expression",
-            "%resource.item.where(linkId='1').answer.value",
+            "extension", "add", "variable",
+            "--name", "weight",
+            "--expression", "%resource.item.where(linkId='weight').answer.value",
             input_json=init_json,
         )
         assert len(q["extension"]) == 1
-
-    def test_expr_name_sets_name(self) -> None:
-        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
-        q = run(
-            "extension",
-            "add",
-            "--name",
-            "variable",
-            "--expression",
-            "%resource.item.where(linkId='weight').answer.value",
-            "--expr-name",
-            "weight",
-            input_json=init_json,
-        )
         ext = q["extension"][0]
+        assert ext["url"] == "http://hl7.org/fhir/StructureDefinition/variable"
         assert ext["valueExpression"]["name"] == "weight"
+        assert ext["valueExpression"]["expression"] == "%resource.item.where(linkId='weight').answer.value"
 
-    def test_expr_name_with_description(self) -> None:
+    def test_variable_with_description(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
-            "extension",
-            "add",
-            "--name",
-            "variable",
-            "--expression",
-            "%resource.item.where(linkId='weight').answer.value",
-            "--expr-name",
-            "weight",
-            "--description",
-            "patient weight in kg",
+            "extension", "add", "variable",
+            "--name", "weight",
+            "--expression", "%resource.item.where(linkId='weight').answer.value",
+            "--description", "patient weight in kg",
             input_json=init_json,
         )
         ext = q["extension"][0]
         assert ext["valueExpression"]["name"] == "weight"
         assert ext["valueExpression"]["description"] == "patient weight in kg"
 
-    def test_add_by_url(self) -> None:
+    def test_add_custom_by_url(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
-            "extension",
-            "add",
-            "--url",
-            "http://custom.org/ext",
-            "--value-string",
-            "hello",
+            "extension", "add", "custom",
+            "--url", "http://custom.org/ext",
+            "--value-string", "hello",
             input_json=init_json,
         )
         assert q["extension"][0]["url"] == "http://custom.org/ext"
@@ -386,19 +348,28 @@ class TestExtension:
     def test_remove_by_name(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
-            "extension",
-            "add",
-            "--name",
-            "variable",
-            "--expression",
-            "test",
+            "extension", "add", "variable",
+            "--name", "w",
+            "--expression", "test",
             input_json=init_json,
         )
         q = run(
-            "extension",
-            "remove",
-            "--name",
-            "variable",
+            "extension", "remove", "variable",
+            input_json=json.dumps(q),
+        )
+        assert "extension" not in q or q.get("extension") is None
+
+    def test_remove_by_url(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "extension", "add", "custom",
+            "--url", "http://custom.org/ext",
+            "--value-string", "hello",
+            input_json=init_json,
+        )
+        q = run(
+            "extension", "remove",
+            "--url", "http://custom.org/ext",
             input_json=json.dumps(q),
         )
         assert "extension" not in q or q.get("extension") is None
@@ -512,11 +483,10 @@ class TestPipeChain:
         q = run(
             "extension",
             "add",
+            "item-control",
             "--link-id",
             "2",
-            "--name",
-            "itemControl",
-            "--value-code",
+            "--code",
             "drop-down",
             input_json=json.dumps(q),
         )

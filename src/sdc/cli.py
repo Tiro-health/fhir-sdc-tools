@@ -393,32 +393,17 @@ def answer_option_set_value_set(link_id: str, url: str) -> None:
 
 # --- extension ---
 
-EXTENSION_ADD_EPILOG = """
-Use --name for common SDC extensions (resolves the full URL automatically),
-or --url for any arbitrary extension. Omit --link-id to add at the
-questionnaire level.
-
-\b
-SDC shorthands and typical usage:
-  hidden               --value-boolean true
-  itemControl          --value-code drop-down
-  variable             --expression "..." --expr-name "..." [--description "..."]
-  calculatedExpression --expression "..."
-  initialExpression    --expression "..."
-  enableWhenExpression --expression "..."
-  candidateExpression  --expression "..."
-  answerExpression     --expression "..."
-\b
-Examples:
-  sdc extension add --link-id 1 --name hidden --value-boolean true
-  sdc extension add --link-id 1 --name itemControl --value-code drop-down
-  sdc extension add --name variable \\
-    --expression "%resource.item.where(linkId='weight').answer.value" \\
-    --expr-name "weight"
-  sdc extension add --link-id bmi --name calculatedExpression \\
-    --expression "%weight / (%height / 100).power(2)"
-  sdc extension add --url "http://custom.org/ext" --value-string "hello"
-"""
+# Kebab-case CLI name → camelCase SDC_URLS key
+_EXT_CLI_NAMES: dict[str, str] = {
+    "hidden": "hidden",
+    "item-control": "itemControl",
+    "variable": "variable",
+    "calculated-expression": "calculatedExpression",
+    "initial-expression": "initialExpression",
+    "enable-when-expression": "enableWhenExpression",
+    "candidate-expression": "candidateExpression",
+    "answer-expression": "answerExpression",
+}
 
 
 @cli.group()
@@ -426,25 +411,218 @@ def extension() -> None:
     """Add or remove extensions (SDC shorthands or arbitrary URLs)."""
 
 
-@extension.command("add", epilog=EXTENSION_ADD_EPILOG)
+@extension.group("add")
+def extension_add() -> None:
+    """Add an extension to an item or questionnaire.
+
+    \b
+    SDC subcommands:
+      hidden                 Mark an item as hidden
+      item-control           Set UI control (e.g. drop-down)
+      variable               Define a FHIRPath variable
+      calculated-expression  Auto-calculate item value
+      initial-expression     Set initial value via FHIRPath
+      enable-when-expression Conditional visibility via FHIRPath
+      candidate-expression   Dynamic answer candidates
+      answer-expression      Dynamic answer via FHIRPath
+      custom                 Arbitrary extension by URL
+    """
+
+
+# --- extension add hidden ---
+
+HIDDEN_EPILOG = """
+\b
+Examples:
+  sdc extension add hidden --link-id secret-field
+"""
+
+
+@extension_add.command("hidden", epilog=HIDDEN_EPILOG)
+@click.option(
+    "--link-id",
+    "link_id",
+    required=True,
+    help="Target item linkId.",
+)
+def ext_add_hidden(link_id: str) -> None:
+    """Mark an item as hidden."""
+    q = read_stdin()
+    ext = Extension.model_validate(
+        {"url": SDC_URLS["hidden"], "valueBoolean": True}
+    )
+    q = add_extension(q, ext, link_id)
+    write_stdout(q)
+
+
+# --- extension add item-control ---
+
+ITEM_CONTROL_EPILOG = """
+\b
+Examples:
+  sdc extension add item-control --link-id 1 --code drop-down
+  sdc extension add item-control --link-id 1 --code chips
+"""
+
+
+@extension_add.command("item-control", epilog=ITEM_CONTROL_EPILOG)
+@click.option(
+    "--link-id",
+    "link_id",
+    required=True,
+    help="Target item linkId.",
+)
+@click.option("--code", required=True, help="Item control code (e.g. drop-down, chips, radio-button).")
+def ext_add_item_control(link_id: str, code: str) -> None:
+    """Set the UI control type for an item."""
+    q = read_stdin()
+    ext = Extension.model_validate({
+        "url": SDC_URLS["itemControl"],
+        "valueCodeableConcept": {"coding": [{"code": code}]},
+    })
+    q = add_extension(q, ext, link_id)
+    write_stdout(q)
+
+
+# --- extension add variable ---
+
+VARIABLE_EPILOG = """
+\b
+Examples:
+  sdc extension add variable --name weight \\
+    --expression "%resource.item.where(linkId='weight').answer.value"
+  sdc extension add variable --name height --link-id grp \\
+    --expression "%resource.item.where(linkId='height').answer.value"
+"""
+
+
+@extension_add.command("variable", epilog=VARIABLE_EPILOG)
 @click.option(
     "--link-id",
     "link_id",
     default=None,
     help="Target item linkId (omit for questionnaire-level).",
 )
+@click.option("--name", "var_name", required=True, help="Variable name (used by FHIRPath to resolve %%variables).")
+@click.option("--expression", required=True, help="FHIRPath expression.")
 @click.option(
-    "--name",
-    "ext_name",
-    default=None,
-    help=f"SDC shorthand: {', '.join(SDC_URLS)}.",
+    "--description", default=None, help="Human-readable description.",
 )
 @click.option(
-    "--url",
-    "ext_url",
-    default=None,
-    help="Full extension URL (alternative to --name).",
+    "--language",
+    default="text/fhirpath",
+    help="Expression language (default: text/fhirpath).",
 )
+def ext_add_variable(
+    link_id: str | None,
+    var_name: str,
+    expression: str,
+    description: str | None,
+    language: str,
+) -> None:
+    """Define a FHIRPath variable."""
+    q = read_stdin()
+    expr_obj: dict[str, str] = {
+        "name": var_name,
+        "language": language,
+        "expression": expression,
+    }
+    if description:
+        expr_obj["description"] = description
+    ext = Extension.model_validate({
+        "url": SDC_URLS["variable"],
+        "valueExpression": expr_obj,
+    })
+    q = add_extension(q, ext, link_id)
+    write_stdout(q)
+
+
+# --- expression-based extension subcommands ---
+
+_EXPRESSION_EXTENSIONS: list[tuple[str, str, str]] = [
+    ("calculated-expression", "calculatedExpression", "Auto-calculate an item's value."),
+    ("initial-expression", "initialExpression", "Set an item's initial value via FHIRPath."),
+    ("enable-when-expression", "enableWhenExpression", "Conditionally show/hide an item via FHIRPath."),
+    ("candidate-expression", "candidateExpression", "Provide dynamic answer candidates."),
+    ("answer-expression", "answerExpression", "Derive answers dynamically via FHIRPath."),
+]
+
+
+def _make_expression_command(
+    cli_name: str, sdc_key: str, help_text: str
+) -> click.Command:
+    """Create a Click command for an expression-based SDC extension."""
+
+    @extension_add.command(
+        cli_name,
+        epilog=f"""
+\\b
+Examples:
+  sdc extension add {cli_name} --link-id 1 --expression "%weight / %height.power(2)"
+""",
+    )
+    @click.option(
+        "--link-id",
+        "link_id",
+        required=True,
+        help="Target item linkId.",
+    )
+    @click.option("--expression", required=True, help="FHIRPath expression.")
+    @click.option(
+        "--description", default=None, help="Human-readable description.",
+    )
+    @click.option(
+        "--language",
+        default="text/fhirpath",
+        help="Expression language (default: text/fhirpath).",
+    )
+    def command(
+        link_id: str,
+        expression: str,
+        description: str | None,
+        language: str,
+    ) -> None:
+        q = read_stdin()
+        expr_obj: dict[str, str] = {
+            "language": language,
+            "expression": expression,
+        }
+        if description:
+            expr_obj["description"] = description
+        ext = Extension.model_validate({
+            "url": SDC_URLS[sdc_key],
+            "valueExpression": expr_obj,
+        })
+        q = add_extension(q, ext, link_id)
+        write_stdout(q)
+
+    command.__doc__ = help_text
+    return command
+
+
+for _cli_name, _sdc_key, _help in _EXPRESSION_EXTENSIONS:
+    _make_expression_command(_cli_name, _sdc_key, _help)
+
+
+# --- extension add custom ---
+
+CUSTOM_EPILOG = """
+\b
+Examples:
+  sdc extension add custom --url "http://custom.org/ext" --value-string "hello"
+  sdc extension add custom --link-id 1 --url "http://custom.org/ext" \\
+    --expression "some expression"
+"""
+
+
+@extension_add.command("custom", epilog=CUSTOM_EPILOG)
+@click.option(
+    "--link-id",
+    "link_id",
+    default=None,
+    help="Target item linkId (omit for questionnaire-level).",
+)
+@click.option("--url", "ext_url", required=True, help="Full extension URL.")
 @click.option("--value-boolean", type=bool, default=None, help="Boolean value.")
 @click.option("--value-string", default=None, help="String value.")
 @click.option(
@@ -460,13 +638,9 @@ def extension() -> None:
 @click.option(
     "--description", "expr_description", default=None, help="Expression description."
 )
-@click.option(
-    "--expr-name", "expr_name", default=None, help="Expression name (used by FHIRPath to resolve %variables)."
-)
-def extension_add(
+def ext_add_custom(
     link_id: str | None,
-    ext_name: str | None,
-    ext_url: str | None,
+    ext_url: str,
     value_boolean: bool | None,
     value_string: str | None,
     value_code: str | None,
@@ -474,35 +648,16 @@ def extension_add(
     expression: str | None,
     language: str,
     expr_description: str | None,
-    expr_name: str | None,
 ) -> None:
-    """Add an extension to an item or questionnaire."""
+    """Add an arbitrary extension by URL."""
     q = read_stdin()
-
-    # Resolve URL
-    if ext_name and ext_url:
-        raise click.UsageError("Use --name or --url, not both.")
-    if ext_name:
-        if ext_name not in SDC_URLS:
-            raise click.UsageError(
-                f"Unknown extension name '{ext_name}'. Known: {', '.join(SDC_URLS)}."
-            )
-        url = SDC_URLS[ext_name]
-    elif ext_url:
-        url = ext_url
-    else:
-        raise click.UsageError("Provide --name or --url.")
-
-    # Build extension data
-    ext_data: dict[str, object] = {"url": url}
+    ext_data: dict[str, object] = {"url": ext_url}
 
     if expression is not None:
         expr_obj: dict[str, str] = {
             "language": language,
             "expression": expression,
         }
-        if expr_name:
-            expr_obj["name"] = expr_name
         if expr_description:
             expr_obj["description"] = expr_description
         ext_data["valueExpression"] = expr_obj
@@ -526,40 +681,51 @@ def extension_add(
     write_stdout(q)
 
 
+# --- extension remove ---
+
 EXTENSION_REMOVE_EPILOG = """
 \b
+Uses SDC shorthand names (kebab-case) or --url for arbitrary extensions.
+\b
 Examples:
-  sdc extension remove --link-id 1 --name hidden
+  sdc extension remove hidden --link-id 1
+  sdc extension remove variable
   sdc extension remove --url "http://custom.org/ext"
-  sdc extension remove --name variable        # questionnaire-level
 """
 
 
 @extension.command("remove", epilog=EXTENSION_REMOVE_EPILOG)
+@click.argument("ext_name", required=False, default=None)
 @click.option(
     "--link-id",
     "link_id",
     default=None,
     help="Target item linkId (omit for questionnaire-level).",
 )
-@click.option("--name", "ext_name", default=None, help="SDC shorthand name.")
 @click.option("--url", "ext_url", default=None, help="Full extension URL.")
 def extension_remove(
-    link_id: str | None,
     ext_name: str | None,
+    link_id: str | None,
     ext_url: str | None,
 ) -> None:
-    """Remove all extensions matching the URL from an item or questionnaire."""
+    """Remove all extensions matching the URL from an item or questionnaire.
+
+    EXT_NAME is an SDC shorthand (hidden, variable, item-control,
+    calculated-expression, etc.). Use --url instead for arbitrary extensions.
+    """
     if ext_name and ext_url:
-        raise click.UsageError("Use --name or --url, not both.")
+        raise click.UsageError("Provide a name or --url, not both.")
     if ext_name:
-        if ext_name not in SDC_URLS:
-            raise click.UsageError(f"Unknown extension name '{ext_name}'.")
-        url = SDC_URLS[ext_name]
+        sdc_key = _EXT_CLI_NAMES.get(ext_name)
+        if not sdc_key:
+            raise click.UsageError(
+                f"Unknown extension '{ext_name}'. Known: {', '.join(_EXT_CLI_NAMES)}."
+            )
+        url = SDC_URLS[sdc_key]
     elif ext_url:
         url = ext_url
     else:
-        raise click.UsageError("Provide --name or --url.")
+        raise click.UsageError("Provide an extension name or --url.")
 
     q = read_stdin()
     q = remove_extension(q, url, link_id)
