@@ -402,7 +402,7 @@ questionnaire level.
 SDC shorthands and typical usage:
   hidden               --value-boolean true
   itemControl          --value-code drop-down
-  variable             --expression "..." [--description "..."] (sets name too)
+  variable             --expression "..." --expr-name "..." [--description "..."]
   calculatedExpression --expression "..."
   initialExpression    --expression "..."
   enableWhenExpression --expression "..."
@@ -414,7 +414,7 @@ Examples:
   sdc extension add --link-id 1 --name itemControl --value-code drop-down
   sdc extension add --name variable \\
     --expression "%resource.item.where(linkId='weight').answer.value" \\
-    --description "weight"
+    --expr-name "weight"
   sdc extension add --link-id bmi --name calculatedExpression \\
     --expression "%weight / (%height / 100).power(2)"
   sdc extension add --url "http://custom.org/ext" --value-string "hello"
@@ -460,6 +460,9 @@ def extension() -> None:
 @click.option(
     "--description", "expr_description", default=None, help="Expression description."
 )
+@click.option(
+    "--expr-name", "expr_name", default=None, help="Expression name (used by FHIRPath to resolve %variables)."
+)
 def extension_add(
     link_id: str | None,
     ext_name: str | None,
@@ -471,6 +474,7 @@ def extension_add(
     expression: str | None,
     language: str,
     expr_description: str | None,
+    expr_name: str | None,
 ) -> None:
     """Add an extension to an item or questionnaire."""
     q = read_stdin()
@@ -497,10 +501,10 @@ def extension_add(
             "language": language,
             "expression": expression,
         }
+        if expr_name:
+            expr_obj["name"] = expr_name
         if expr_description:
             expr_obj["description"] = expr_description
-            if ext_name == "variable":
-                expr_obj["name"] = expr_description
         ext_data["valueExpression"] = expr_obj
     elif value_boolean is not None:
         ext_data["valueBoolean"] = value_boolean

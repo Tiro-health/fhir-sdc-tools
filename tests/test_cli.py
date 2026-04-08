@@ -334,7 +334,7 @@ class TestExtension:
         )
         assert len(q["extension"]) == 1
 
-    def test_variable_description_sets_name(self) -> None:
+    def test_expr_name_sets_name(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
             "extension",
@@ -343,43 +343,31 @@ class TestExtension:
             "variable",
             "--expression",
             "%resource.item.where(linkId='weight').answer.value",
-            "--description",
+            "--expr-name",
             "weight",
             input_json=init_json,
         )
         ext = q["extension"][0]
-        assert ext["valueExpression"]["description"] == "weight"
         assert ext["valueExpression"]["name"] == "weight"
 
-    def test_non_variable_description_does_not_set_name(self) -> None:
+    def test_expr_name_with_description(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
-        q = run(
-            "item",
-            "add",
-            "--link-id",
-            "1",
-            "--text",
-            "BMI",
-            "--type",
-            "decimal",
-            input_json=init_json,
-        )
         q = run(
             "extension",
             "add",
-            "--link-id",
-            "1",
             "--name",
-            "calculatedExpression",
+            "variable",
             "--expression",
-            "%weight / %height.power(2)",
+            "%resource.item.where(linkId='weight').answer.value",
+            "--expr-name",
+            "weight",
             "--description",
-            "BMI calculation",
-            input_json=json.dumps(q),
+            "patient weight in kg",
+            input_json=init_json,
         )
-        ext = q["item"][0]["extension"][0]
-        assert ext["valueExpression"]["description"] == "BMI calculation"
-        assert "name" not in ext["valueExpression"]
+        ext = q["extension"][0]
+        assert ext["valueExpression"]["name"] == "weight"
+        assert ext["valueExpression"]["description"] == "patient weight in kg"
 
     def test_add_by_url(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
