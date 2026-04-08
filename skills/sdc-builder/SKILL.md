@@ -1,11 +1,11 @@
 ---
 name: sdc-builder
-description: "Build and preview FHIR SDC Questionnaires using the fhir-sdc-tools Python library. Use when: (1) Creating or modifying FHIR Questionnaires programmatically, (2) Adding items, extensions, enableWhen logic, answer options, or translations to questionnaires, (3) Validating questionnaire structure, (4) Previewing questionnaires with the Tiro renderer. Triggers: 'build questionnaire', 'create questionnaire', 'SDC form', 'add item to questionnaire', 'questionnaire builder', 'preview questionnaire', 'render questionnaire'."
+description: "Build and preview FHIR SDC Questionnaires using the fhir-sdc-tools CLI or Python library. Use when: (1) Creating or modifying FHIR Questionnaires programmatically, (2) Adding items, extensions, enableWhen logic, answer options, or translations to questionnaires, (3) Validating questionnaire structure, (4) Previewing questionnaires with the Tiro renderer. Triggers: 'build questionnaire', 'create questionnaire', 'SDC form', 'add item to questionnaire', 'questionnaire builder', 'preview questionnaire', 'render questionnaire'."
 ---
 
 # SDC Questionnaire Builder
 
-Build FHIR SDC Questionnaires using the `fhir-sdc-tools` Python library and preview them with the `render-questionnaire` MCP tool.
+Build FHIR SDC Questionnaires using the `fhir-sdc-tools` CLI or Python library, and preview them with the `render-questionnaire` MCP tool.
 
 ## Setup
 
@@ -15,15 +15,75 @@ Before first use, ensure the library is installed:
 uv pip install fhir-sdc-tools
 ```
 
-If `uv` is not available, fall back to `pip install fhir-sdc-tools`.
+If `uv` is not available, fall back to `pip install fhir-sdc-tools --break-system-packages`.
+
+If the environment has Python < 3.10 and `uv` is available, create a venv with a supported version first:
+
+```bash
+uv venv --python 3.11 .venv-sdc && source .venv-sdc/bin/activate
+uv pip install fhir-sdc-tools
+```
 
 The `render-questionnaire` MCP tool is provided by this plugin automatically.
 
 ## How to Build Questionnaires
 
-Write a Python script that uses the `sdc` library to compose the questionnaire, then run it. The library uses **immutable transforms** — each function returns a new `Questionnaire`, so chain calls by reassigning.
+There are two approaches: the **CLI pipe workflow** (preferred for most cases) and the **Python API**. The CLI is more concise and composes well; use the Python API when you need programmatic control (loops, conditionals, reading existing files).
 
-### Minimal example
+### CLI pipe workflow (preferred)
+
+The `sdc` CLI reads JSON from stdin and writes to stdout. Chain commands with pipes to build questionnaires incrementally:
+
+```bash
+sdc init --url http://example.org/intake --title "Intake form" \
+  | sdc item add --link-id name --text "Full name" --type string --required \
+  | sdc item add --link-id dob --text "Date of birth" --type date --required \
+  | sdc item add --link-id gender --text "Gender" --type choice \
+  | sdc answer-option add --link-id gender --value-coding "http://hl7.org/fhir/administrative-gender|male|Male" \
+  | sdc answer-option add --link-id gender --value-coding "http://hl7.org/fhir/administrative-gender|female|Female" \
+  | sdc extension add --link-id gender --name itemControl --value-code drop-down \
+  | sdc validate
+```
+
+Key CLI commands:
+
+- `sdc init --url URL --title TITLE` — create a new questionnaire
+- `sdc item add --link-id ID --text TEXT --type TYPE [--parent PARENT_ID] [--required] [--repeats]` — add an item
+- `sdc item remove --link-id ID` — remove an item
+- `sdc answer-option add --link-id ID --value-coding "system|code|display"` — add a coded answer option
+- `sdc answer-option add --link-id ID --value-string "text"` — add a string answer option
+- `sdc extension add --name SHORTHAND --expression "..." --description "..."` — add an SDC extension using a shorthand name
+- `sdc extension add --link-id ID --name hidden --value-boolean true` — hide an item
+- `sdc enable-when add --link-id ID --question SOURCE_ID --operator OP --answer-boolean true` — conditional display
+- `sdc meta --status active --publisher "Org"` — set metadata
+- `sdc translate --link-id ID --lang nl --value "Dutch text"` — add translations
+- `sdc validate` — validate and pass through (warnings to stderr)
+
+#### CLI example with variables and calculated expressions
+
+```bash
+sdc init --url http://example.org/bmi --title "BMI calculator" \
+  | sdc item add --link-id grp --text "BMI calculator" --type group \
+  | sdc extension add --link-id grp --name variable \
+      --expression "QuestionnaireResponse.item.where(linkId='weight').answer.value" \
+      --description weight \
+  | sdc extension add --link-id grp --name variable \
+      --expression "QuestionnaireResponse.item.where(linkId='height').answer.value" \
+      --description height \
+  | sdc extension add --link-id grp --name variable \
+      --expression "iif(%weight.exists() and %height > 0, (%weight / (%height / 100).power(2)).round(1), {})" \
+      --description bmi \
+  | sdc item add --link-id weight --text "Weight (kg)" --type decimal --required --parent grp \
+  | sdc item add --link-id height --text "Height (cm)" --type decimal --required --parent grp \
+  | sdc item add --link-id bmi-result --text "Your BMI" --type decimal --parent grp \
+  | sdc extension add --link-id bmi-result --name calculatedExpression \
+      --expression "%bmi" \
+  | sdc validate
+```
+
+### Python API
+
+Use the Python API when you need programmatic control. The library uses **immutable transforms** — each function returns a new `Questionnaire`, so chain calls by reassigning.
 
 ```python
 from sdc import (
@@ -64,11 +124,10 @@ See [references/api.md](references/api.md) for the complete function and model r
 ### Building a new questionnaire
 
 1. **Install** — run `uv pip install fhir-sdc-tools` if not already present
-2. **Write a Python script** that creates the questionnaire using the API
-3. **Run the script** via `python script.py` to produce the JSON
-4. **Validate** — call `validate(q)` before outputting; fix any warnings
-5. **Save** — write JSON to a file
-6. **Preview** — use the `render-questionnaire` MCP tool to preview the form visually
+2. **Build** — use the CLI pipe workflow (preferred) or write a Python script
+3. **Validate** — pipe through `sdc validate` or call `validate(q)` in Python
+4. **Save** — write JSON to a file (CLI: `| tee output.json`, Python: `pathlib.Path(...).write_text(...)`)
+5. **Preview** — use the `render-questionnaire` MCP tool to preview the form visually
 
 ### Modifying an existing questionnaire
 
@@ -95,9 +154,9 @@ Use the `render-questionnaire` MCP tool to preview:
 
 ## FHIR Version Notes
 
-- **R4** (default): Uses `choice` and `open-choice` item types for coded answers
-- **R5**: Replaces `choice`/`open-choice` with `coding` type; adds `question` type
-- Set version explicitly with `set_fhir_version(q, FhirVersion.R4)` or detect from env var `SDC_FHIR_VERSION`
+- **R5** (default for the Tiro renderer): Replaces `choice`/`open-choice` with `coding` type; adds `question` type
+- **R4**: Uses `choice` and `open-choice` item types for coded answers
+- The `sdc` CLI and Python library default to R4 if no version is set. To match the renderer, explicitly set R5: `--fhir-version R5` on `sdc init`, or `set_fhir_version(q, FhirVersion.R5)` in Python, or set `SDC_FHIR_VERSION=R5` as an environment variable
 
 ## Tips
 
