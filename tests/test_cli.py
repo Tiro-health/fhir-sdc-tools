@@ -684,3 +684,50 @@ class TestTranslate:
             input_json=init_json,
         )
         assert result.exit_code != 0
+
+
+class TestGuide:
+    def test_guide_default(self) -> None:
+        result = run_raw("guide")
+        assert result.exit_code == 0
+        assert "PIPE PATTERN" in result.output
+        assert "COMMANDS" in result.output
+        assert "sdc guide examples" in result.output
+
+    def test_guide_examples(self) -> None:
+        result = run_raw("guide", "examples")
+        assert result.exit_code == 0
+        assert "BMI CALCULATOR" in result.output
+        assert "INTAKE FORM" in result.output
+
+    def test_guide_extensions(self) -> None:
+        result = run_raw("guide", "extensions")
+        assert result.exit_code == 0
+        assert "hidden" in result.output
+        assert "calculatedExpression" in result.output
+
+    def test_guide_fhir(self) -> None:
+        result = run_raw("guide", "fhir")
+        assert result.exit_code == 0
+        assert "R4" in result.output
+        assert "R5" in result.output
+
+    def test_guide_api(self) -> None:
+        result = run_raw("guide", "api")
+        assert result.exit_code == 0
+        assert "Questionnaire" in result.output
+        assert "add_item" in result.output
+
+    def test_guide_unknown_topic(self) -> None:
+        result = run_raw("guide", "nonexistent")
+        assert result.exit_code != 0
+        assert "Unknown topic" in result.output
+        assert "overview" in result.output
+
+    def test_guide_all_topics_non_empty(self) -> None:
+        from sdc.guide import TOPICS
+
+        for topic_name in TOPICS:
+            result = run_raw("guide", topic_name)
+            assert result.exit_code == 0, f"Topic '{topic_name}' failed"
+            assert len(result.output.strip()) > 0, f"Topic '{topic_name}' is empty"

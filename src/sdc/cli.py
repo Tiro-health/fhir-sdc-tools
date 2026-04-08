@@ -70,6 +70,8 @@ Chain them with pipes to build questionnaires incrementally.
 \b
 Environment:
   SDC_FHIR_VERSION   Set default FHIR version (R4 or R5)
+
+Run 'sdc guide' for the full guide, or 'sdc guide examples' for examples.
 """
 
 
@@ -820,3 +822,21 @@ def apply_translations_cmd(csv_path: str, lang: str) -> None:
                 )
 
     write_stdout(q)
+
+
+# --- guide ---
+
+
+@cli.command()
+@click.argument("topic", default="overview", required=False)
+def guide(topic: str) -> None:
+    """Show the built-in guide. Topics: examples, extensions, fhir, api."""
+    from sdc.guide import TOPICS, get_topic
+
+    result = get_topic(topic.lower())
+    if result is None:
+        available = ", ".join(TOPICS)
+        raise click.UsageError(f"Unknown topic '{topic}'. Available: {available}")
+
+    _description, content = result
+    click.echo_via_pager(content)
