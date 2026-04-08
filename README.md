@@ -73,6 +73,16 @@ sdc init --url http://example.org/q1 --title "My Form" \
   | sdc validate
 ```
 
+Extensions (SDC shortcuts and custom URLs):
+
+```bash
+sdc init --url http://example.org/q1 --title "My Form" \
+  | sdc item add --link-id 1 --text "Name" --type string \
+  | sdc extension add custom --link-id 1 \
+      --url "http://example.org/ext" --value-string "hello" \
+  | sdc validate
+```
+
 ## Install options
 
 | Install | Gets you |
