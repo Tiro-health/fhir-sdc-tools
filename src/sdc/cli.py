@@ -93,7 +93,7 @@ Examples:
 
 
 @cli.command(epilog=INIT_EPILOG)
-@click.option("--url", required=True, help="Canonical URL for the questionnaire.")
+@click.option("--url", default=None, help="Canonical URL for the questionnaire.")
 @click.option("--title", required=True, help="Human-readable title.")
 @click.option(
     "--status",
@@ -110,7 +110,7 @@ Examples:
     help="FHIR version (R4 or R5). Falls back to SDC_FHIR_VERSION env var, then R5.",
 )
 def init(
-    url: str,
+    url: str | None,
     title: str,
     status: str,
     name: str | None,
