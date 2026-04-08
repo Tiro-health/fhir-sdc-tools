@@ -70,6 +70,14 @@ Chain them with pipes to build questionnaires incrementally.
 \b
 Environment:
   SDC_FHIR_VERSION   Set default FHIR version (R4 or R5)
+
+\b
+Bugs / feature requests:
+  https://github.com/Tiro-health/fhir-sdc-tools/issues/new
+
+\b
+Example – file a bug with a pre-filled title:
+  https://github.com/Tiro-health/fhir-sdc-tools/issues/new?title=Bug:%20<short+description>&labels=bug
 """
 
 
