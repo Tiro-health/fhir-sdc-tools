@@ -402,7 +402,7 @@ questionnaire level.
 SDC shorthands and typical usage:
   hidden               --value-boolean true
   itemControl          --value-code drop-down
-  variable             --expression "..." [--description "..."]
+  variable             --expression "..." [--description "..."] (sets name too)
   calculatedExpression --expression "..."
   initialExpression    --expression "..."
   enableWhenExpression --expression "..."
@@ -499,6 +499,8 @@ def extension_add(
         }
         if expr_description:
             expr_obj["description"] = expr_description
+            if ext_name == "variable":
+                expr_obj["name"] = expr_description
         ext_data["valueExpression"] = expr_obj
     elif value_boolean is not None:
         ext_data["valueBoolean"] = value_boolean

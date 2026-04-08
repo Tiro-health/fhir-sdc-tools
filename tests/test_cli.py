@@ -334,6 +334,53 @@ class TestExtension:
         )
         assert len(q["extension"]) == 1
 
+    def test_variable_description_sets_name(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "extension",
+            "add",
+            "--name",
+            "variable",
+            "--expression",
+            "%resource.item.where(linkId='weight').answer.value",
+            "--description",
+            "weight",
+            input_json=init_json,
+        )
+        ext = q["extension"][0]
+        assert ext["valueExpression"]["description"] == "weight"
+        assert ext["valueExpression"]["name"] == "weight"
+
+    def test_non_variable_description_does_not_set_name(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "item",
+            "add",
+            "--link-id",
+            "1",
+            "--text",
+            "BMI",
+            "--type",
+            "decimal",
+            input_json=init_json,
+        )
+        q = run(
+            "extension",
+            "add",
+            "--link-id",
+            "1",
+            "--name",
+            "calculatedExpression",
+            "--expression",
+            "%weight / %height.power(2)",
+            "--description",
+            "BMI calculation",
+            input_json=json.dumps(q),
+        )
+        ext = q["item"][0]["extension"][0]
+        assert ext["valueExpression"]["description"] == "BMI calculation"
+        assert "name" not in ext["valueExpression"]
+
     def test_add_by_url(self) -> None:
         init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
         q = run(
