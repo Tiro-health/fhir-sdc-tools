@@ -197,7 +197,26 @@ ext = Extension.model_validate({
     "valueCodeableConcept": {"coding": [{"code": "drop-down"}]},
 })
 q = add_extension(q, ext, link_id="q1")
+
+# Custom extension (arbitrary URL, not limited to SDC_URLS)
+ext = Extension.model_validate({
+    "url": "http://example.org/fhir/StructureDefinition/my-custom-ext",
+    "valueString": "hello",
+})
+q = add_extension(q, ext, link_id="q1")
+
+# Custom extension with an expression value
+ext = Extension.model_validate({
+    "url": "http://example.org/fhir/StructureDefinition/my-expression-ext",
+    "valueExpression": {
+        "language": "text/fhirpath",
+        "expression": "%resource.item.where(linkId='age').answer.value > 18",
+    },
+})
+q = add_extension(q, ext, link_id="q2")
 ```
+
+The `url` field can be any valid extension URL — you are not limited to `SDC_URLS` shortcuts. Use `Extension.model_validate(...)` with the full URL and the appropriate value field (`valueString`, `valueBoolean`, `valueInteger`, `valueCodeableConcept`, `valueExpression`, etc.).
 
 ### remove_extension(q, extension_url, link_id=None) → Questionnaire
 

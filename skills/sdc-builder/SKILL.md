@@ -106,3 +106,4 @@ Use the `render-questionnaire` MCP tool to preview:
 - Use `exclude_none=True` to produce clean FHIR JSON
 - For nested items, pass `parent_link_id` to `add_item()`
 - SDC extension shortcuts: `hidden`, `itemControl`, `variable`, `calculatedExpression`, `initialExpression`, `enableWhenExpression`, `candidateExpression`, `answerExpression`
+- Custom extensions: `add_extension()` accepts any URL, not just `SDC_URLS` shortcuts — use `Extension.model_validate({"url": "http://example.org/ext", "valueString": "..."})` for arbitrary extensions
