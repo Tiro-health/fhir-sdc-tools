@@ -32,7 +32,7 @@ from sdc import (
 )
 
 q = Questionnaire(url="http://example.org/intake", title="Intake Form")
-q = set_fhir_version(q, FhirVersion.R4)
+q = set_fhir_version(q, FhirVersion.R5)
 q = add_item(q, QuestionnaireItem(link_id="name", text="Full name", type=QuestionnaireItemType.STRING))
 q = add_item(q, QuestionnaireItem(link_id="dob", text="Date of birth", type=QuestionnaireItemType.DATE))
 
@@ -95,9 +95,9 @@ Use the `render-questionnaire` MCP tool to preview:
 
 ## FHIR Version Notes
 
-- **R4** (default): Uses `choice` and `open-choice` item types for coded answers
-- **R5**: Replaces `choice`/`open-choice` with `coding` type; adds `question` type
-- Set version explicitly with `set_fhir_version(q, FhirVersion.R4)` or detect from env var `SDC_FHIR_VERSION`
+- **R4**: Uses `choice` and `open-choice` item types for coded answers
+- **R5** (default): Replaces `choice`/`open-choice` with `coding` type; adds `question` type
+- Set version explicitly with `set_fhir_version(q, FhirVersion.R5)` or detect from env var `SDC_FHIR_VERSION`
 
 ## Tips
 

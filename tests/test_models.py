@@ -163,10 +163,10 @@ class TestFhirVersion:
         monkeypatch.setenv("SDC_FHIR_VERSION", "R5")  # type: ignore[attr-defined]
         assert resolve_fhir_version() == FhirVersion.R5
 
-    def test_resolve_fhir_version_default_r4(self) -> None:
-        # No profile, no env var => R4
+    def test_resolve_fhir_version_default_r5(self) -> None:
+        # No profile, no env var => R5
         q = Questionnaire(url="http://example.org/q1")
-        assert resolve_fhir_version(q) == FhirVersion.R4
+        assert resolve_fhir_version(q) == FhirVersion.R5
 
     def test_set_version_preserves_other_profiles(self) -> None:
         raw = {

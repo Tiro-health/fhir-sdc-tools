@@ -54,7 +54,7 @@ from sdc import (
 )
 
 q = Questionnaire(url="http://example.org/intake", title="Intake Form")
-q = set_fhir_version(q, FhirVersion.R4)
+q = set_fhir_version(q, FhirVersion.R5)
 q = add_item(q, QuestionnaireItem(link_id="name", text="Full name", type=QuestionnaireItemType.STRING))
 q = add_item(q, QuestionnaireItem(link_id="dob", text="Date of birth", type=QuestionnaireItemType.DATE))
 
