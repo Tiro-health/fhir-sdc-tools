@@ -265,7 +265,7 @@ import json, pathlib
 
 # Create questionnaire
 q = Questionnaire(url="http://example.org/intake", title="Patient Intake")
-q = set_fhir_version(q, FhirVersion.R4)
+q = set_fhir_version(q, FhirVersion.R5)
 q = set_meta(q, language="en", publisher="Example Hospital")
 
 # Add items
