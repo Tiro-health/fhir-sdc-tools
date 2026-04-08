@@ -23,7 +23,7 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "Tiro Questionnaire": {
+    "Tiro.health SDC Tools": {
       "command": "uvx",
       "args": ["--from", "fhir-sdc-tools[mcp]", "fhir-sdc-mcp"]
     }
