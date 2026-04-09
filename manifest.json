@@ -1,0 +1,32 @@
+{
+  "manifest_version": "0.3",
+  "name": "fhir-sdc-tools",
+  "version": "0.3.0",
+  "display_name": "FHIR SDC Questionnaire Renderer",
+  "description": "Render interactive FHIR SDC Questionnaires using the Tiro web SDK",
+  "author": {
+    "name": "Tiro Health",
+    "url": "https://github.com/Tiro-health"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Tiro-health/fhir-sdc-tools",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tiro-health/fhir-sdc-tools"
+  },
+  "keywords": ["fhir", "sdc", "questionnaire", "healthcare", "hl7"],
+  "server": {
+    "type": "python",
+    "entry_point": "src/sdc/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": ["run", "--project", "${__dirname}", "fhir-sdc-mcp"]
+    }
+  },
+  "tools": [
+    {
+      "name": "render-questionnaire",
+      "description": "Renders an interactive FHIR Questionnaire form. Accepts a canonical questionnaire URL or an inline FHIR Questionnaire JSON resource."
+    }
+  ]
+}
