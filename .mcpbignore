@@ -1,0 +1,15 @@
+.git/
+.github/
+.claude-plugin/
+.claude/
+.mcp.json
+tests/
+examples/
+skills/
+*.pyc
+__pycache__/
+.ruff_cache/
+.pytest_cache/
+.venv/
+dist/
+*.mcpb

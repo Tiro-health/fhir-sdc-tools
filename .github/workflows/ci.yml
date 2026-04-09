@@ -18,3 +18,10 @@ jobs:
 
       - name: Lint
         run: uv run ruff check src/ tests/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate MCPB manifest
+        run: npx --yes @anthropic-ai/mcpb validate manifest.json
