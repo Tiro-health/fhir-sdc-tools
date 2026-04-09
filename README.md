@@ -23,7 +23,7 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "Tiro.health SDC Tools": {
+    "Tiro.health FHIR SDC tools": {
       "command": "uvx",
       "args": ["--from", "fhir-sdc-tools[mcp]", "fhir-sdc-mcp"]
     }
@@ -38,7 +38,7 @@ Restart Claude Desktop. The `render-questionnaire` tool will appear in the tools
 ## Quick start: Claude Code
 
 ```bash
-claude mcp add "Tiro Questionnaire" -- uvx --from "fhir-sdc-tools[mcp]" fhir-sdc-mcp
+claude mcp add "Tiro.health FHIR SDC tools" -- uvx --from "fhir-sdc-tools[mcp]" fhir-sdc-mcp
 ```
 
 ## Python library

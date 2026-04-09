@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "fhir-sdc-tools",
   "version": "0.3.0",
-  "display_name": "FHIR SDC Questionnaire Renderer",
+  "display_name": "Tiro.health FHIR SDC tools",
   "description": "Render interactive FHIR SDC Questionnaires using the Tiro web SDK",
   "author": {
     "name": "Tiro Health",

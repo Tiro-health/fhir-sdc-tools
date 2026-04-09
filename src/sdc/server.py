@@ -8,7 +8,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from mcp.types import CallToolResult, TextContent
 
-RESOURCE_URI = "ui://tiro-questionnaire/questionnaire-app.html"
+RESOURCE_URI = "ui://fhir-sdc-tools/questionnaire-app.html"
 RESOURCE_MIME_TYPE = "text/html;profile=mcp-app"
 
 CSP_CONFIG: dict[str, Any] = {
@@ -26,7 +26,7 @@ UI_META: dict[str, Any] = {
 _HTML_PATH = Path(__file__).resolve().parent / "questionnaire-app.html"
 
 server = FastMCP(
-    name="tiro-questionnaire",
+    name="Tiro.health FHIR SDC tools",
     log_level="WARNING",
 )
 
