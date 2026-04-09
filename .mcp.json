@@ -1,5 +1,5 @@
 {
-  "tiro-questionnaire": {
+  "Tiro.health FHIR SDC tools": {
     "command": "uvx",
     "args": ["--from", "fhir-sdc-tools[mcp]", "fhir-sdc-mcp"]
   }
