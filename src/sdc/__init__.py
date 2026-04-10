@@ -1,5 +1,24 @@
 """fhir-sdc: Composable library and CLI for building FHIR SDC Questionnaires."""
 
+from sdc.composition import (
+    Composition,
+    CompositionSection,
+    Narrative,
+    TEMPLATE_EXTRACT_CONTEXT_URL,
+    TEMPLATE_EXTRACT_PROFILE,
+    TEMPLATE_EXTRACT_URL,
+    section,
+)
+from sdc.fhirpath import (
+    answer_value,
+    coding,
+    ctx_where,
+    item_path,
+    nested_answer_value,
+    placeholder,
+    res_context,
+    res_where,
+)
 from sdc.models import (
     EnableWhen,
     EnableWhenOperator,
@@ -19,6 +38,7 @@ from sdc.transforms import (
     add_enable_when,
     add_extension,
     add_item,
+    add_template_extract,
     add_translation,
     extract_texts,
     find_item,
@@ -31,6 +51,23 @@ from sdc.transforms import (
 )
 
 __all__ = [
+    # Composition models
+    "Composition",
+    "CompositionSection",
+    "Narrative",
+    "TEMPLATE_EXTRACT_CONTEXT_URL",
+    "TEMPLATE_EXTRACT_PROFILE",
+    "TEMPLATE_EXTRACT_URL",
+    "section",
+    # FHIRPath helpers
+    "answer_value",
+    "coding",
+    "ctx_where",
+    "item_path",
+    "nested_answer_value",
+    "placeholder",
+    "res_context",
+    "res_where",
     # Models
     "EnableWhen",
     "EnableWhenOperator",
@@ -49,6 +86,7 @@ __all__ = [
     "add_enable_when",
     "add_extension",
     "add_item",
+    "add_template_extract",
     "add_translation",
     "extract_texts",
     "find_item",
