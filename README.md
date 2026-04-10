@@ -90,6 +90,14 @@ sdc init --url http://example.org/q1 --title "My Form" \
 | `pip install fhir-sdc-tools` | Python library + `sdc` CLI |
 | `pip install fhir-sdc-tools[mcp]` | Above + `fhir-sdc-mcp` server with `render-questionnaire` tool |
 
+## Feedback & Issues
+
+Found a bug or have a feature idea? Open an issue on GitHub:
+
+- [Report a bug](https://github.com/Tiro-health/fhir-sdc-tools/issues/new?title=%5BBug%5D%3A+&body=%23%23+Description%0A%0A%23%23+Steps+to+reproduce%0A%0A1.+%0A2.+%0A3.+%0A%0A%23%23+Expected+behavior%0A%0A%23%23+Actual+behavior%0A%0A%23%23+Environment%0A%0A-+fhir-sdc-tools+version%3A+%0A-+Python+version%3A+%0A-+OS%3A+&labels=bug)
+- [Request a feature](https://github.com/Tiro-health/fhir-sdc-tools/issues/new?title=%5BFeature%5D%3A+&body=%23%23+Description%0A%0A%23%23+Use+case%0A%0A%23%23+Proposed+solution%0A%0A&labels=enhancement)
+- [Browse existing issues](https://github.com/Tiro-health/fhir-sdc-tools/issues)
+
 ## License
 
 MIT

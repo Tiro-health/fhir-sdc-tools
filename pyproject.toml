@@ -20,6 +20,11 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Tiro-health/fhir-sdc-tools"
+Repository = "https://github.com/Tiro-health/fhir-sdc-tools"
+Issues = "https://github.com/Tiro-health/fhir-sdc-tools/issues"
+
 [project.optional-dependencies]
 mcp = ["mcp>=1.26.0"]
 
