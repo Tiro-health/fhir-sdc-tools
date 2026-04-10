@@ -8,11 +8,17 @@ from __future__ import annotations
 
 import copy
 
+from sdc.composition import (
+    TEMPLATE_EXTRACT_PROFILE,
+    TEMPLATE_EXTRACT_URL,
+    Composition,
+)
 from sdc.models import (
     ITEM_TYPES_FOR_VERSION,
     TRANSLATION_URL,
     EnableWhen,
     Extension,
+    Meta,
     Questionnaire,
     QuestionnaireItem,
     resolve_fhir_version,
@@ -199,6 +205,53 @@ def remove_extension(
 def set_meta(q: Questionnaire, **fields: object) -> Questionnaire:
     """Set top-level metadata fields."""
     return q.model_copy(update=fields)
+
+
+def add_template_extract(
+    q: Questionnaire, composition: Composition
+) -> Questionnaire:
+    """Embed a Composition as a contained resource and wire up templateExtract.
+
+    Adds three things to the Questionnaire:
+    1. The Composition in ``q.contained[]``
+    2. A ``templateExtract`` complex extension pointing to ``#<composition.id>``
+    3. The ``sdc-questionnaire-extr-template`` profile in ``meta.profile[]``
+
+    Returns a new Questionnaire — the original is not mutated.
+    """
+    comp_json = composition.model_dump(by_alias=True, exclude_none=True)
+
+    # 1. contained
+    contained = list(_get_extra(q, "contained") or [])
+    contained.append(comp_json)
+
+    # 2. templateExtract complex extension
+    ref = f"#{composition.id}" if composition.id else "#composition"
+    ext = Extension.model_validate(
+        {
+            "url": TEMPLATE_EXTRACT_URL,
+            "extension": [
+                {"url": "template", "valueReference": {"reference": ref}},
+            ],
+        }
+    )
+    exts = list(q.extension or [])
+    exts.append(ext)
+
+    # 3. profile
+    meta = q.meta or Meta()
+    profiles = list(meta.profile or [])
+    if TEMPLATE_EXTRACT_PROFILE not in profiles:
+        profiles.append(TEMPLATE_EXTRACT_PROFILE)
+    new_meta = meta.model_copy(update={"profile": profiles})
+
+    return q.model_copy(
+        update={
+            "contained": contained,
+            "extension": exts,
+            "meta": new_meta,
+        }
+    )
 
 
 def validate(q: Questionnaire) -> list[str]:
