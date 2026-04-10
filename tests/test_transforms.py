@@ -459,8 +459,11 @@ class TestAddTemplateExtract:
         ext_urls = [e.url for e in result.extension]
         assert TEMPLATE_EXTRACT_URL in ext_urls
         ext = next(e for e in result.extension if e.url == TEMPLATE_EXTRACT_URL)
-        ref = getattr(ext, "__pydantic_extra__", {}).get("valueReference", {})
-        assert ref["reference"] == "#comp-1"
+        # SDC spec: complex extension with nested sub-extensions
+        sub_exts = getattr(ext, "__pydantic_extra__", {}).get("extension", [])
+        assert len(sub_exts) == 1
+        assert sub_exts[0]["url"] == "template"
+        assert sub_exts[0]["valueReference"]["reference"] == "#comp-1"
 
     def test_adds_profile(self, empty_questionnaire: Questionnaire) -> None:
         comp = _make_composition()

@@ -7,7 +7,11 @@ from sdc.composition import (
     TEMPLATE_EXTRACT_CONTEXT_URL,
     TEMPLATE_EXTRACT_PROFILE,
     TEMPLATE_EXTRACT_URL,
+    add_section,
+    find_section,
     section,
+    set_section_context,
+    set_section_text,
 )
 from sdc.fhirpath import (
     answer_value,
@@ -58,7 +62,11 @@ __all__ = [
     "TEMPLATE_EXTRACT_CONTEXT_URL",
     "TEMPLATE_EXTRACT_PROFILE",
     "TEMPLATE_EXTRACT_URL",
+    "add_section",
+    "find_section",
     "section",
+    "set_section_context",
+    "set_section_text",
     # FHIRPath helpers
     "answer_value",
     "coding",

@@ -225,12 +225,14 @@ def add_template_extract(
     contained = list(_get_extra(q, "contained") or [])
     contained.append(comp_json)
 
-    # 2. templateExtract extension
+    # 2. templateExtract complex extension
     ref = f"#{composition.id}" if composition.id else "#composition"
     ext = Extension.model_validate(
         {
             "url": TEMPLATE_EXTRACT_URL,
-            "valueReference": {"reference": ref, "type": "Composition"},
+            "extension": [
+                {"url": "template", "valueReference": {"reference": ref}},
+            ],
         }
     )
     exts = list(q.extension or [])

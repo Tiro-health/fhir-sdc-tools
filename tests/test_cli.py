@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 
 from click.testing import CliRunner
 
 from sdc.cli import cli
+from sdc.composition import TEMPLATE_EXTRACT_PROFILE, TEMPLATE_EXTRACT_URL
 from sdc.models import FHIR_VERSION_PROFILES, FhirVersion
 
 
@@ -696,3 +699,276 @@ class TestTranslate:
             input_json=init_json,
         )
         assert result.exit_code != 0
+
+
+def _write_composition_file(path: str) -> None:
+    """Write a minimal Composition JSON to a temp file."""
+    comp = {
+        "resourceType": "Composition",
+        "id": "comp-1",
+        "status": "final",
+        "type": {"coding": [{"system": "http://loinc.org", "code": "11488-4"}]},
+        "title": "Test Report",
+        "section": [
+            {
+                "title": "Findings",
+                "text": {
+                    "status": "generated",
+                    "div": '<div xmlns="http://www.w3.org/1999/xhtml">content</div>',
+                },
+            }
+        ],
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(comp, f)
+
+
+class TestTemplateEmbed:
+    def test_embed_from_file(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+        try:
+            _write_composition_file(tmp_path)
+            q = run(
+                "template", "embed", "--file", tmp_path,
+                input_json=init_json,
+            )
+            # contained resource
+            assert "contained" in q
+            assert q["contained"][0]["resourceType"] == "Composition"
+            assert q["contained"][0]["id"] == "comp-1"
+            # templateExtract extension
+            ext_urls = [e["url"] for e in q["extension"]]
+            assert TEMPLATE_EXTRACT_URL in ext_urls
+            # profile
+            assert TEMPLATE_EXTRACT_PROFILE in q["meta"]["profile"]
+        finally:
+            os.unlink(tmp_path)
+
+    def test_embed_missing_file(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        result = run_raw(
+            "template", "embed", "--file", "/nonexistent/path.json",
+            input_json=init_json,
+        )
+        assert result.exit_code != 0
+
+    def test_embed_pipe_chain(self) -> None:
+        """Full pipe: init -> item add -> template embed -> validate."""
+        q = run("init", "--url", "http://example.org/q1", "--title", "Report")
+        q = run(
+            "item", "add", "--link-id", "1", "--text", "Q1", "--type", "string",
+            input_json=json.dumps(q),
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as tmp:
+            tmp_path = tmp.name
+        try:
+            _write_composition_file(tmp_path)
+            q = run(
+                "template", "embed", "--file", tmp_path,
+                input_json=json.dumps(q),
+            )
+            # Validate still passes
+            result = run_raw("validate", input_json=json.dumps(q))
+            assert result.exit_code == 0
+            data = json.loads(result.output)
+            assert data["resourceType"] == "Questionnaire"
+            assert "contained" in data
+            assert len(data["item"]) == 1
+        finally:
+            os.unlink(tmp_path)
+
+
+# --- Composition CLI ---
+
+
+class TestCompositionInit:
+    def test_basic(self) -> None:
+        c = run(
+            "composition", "init",
+            "--id", "report",
+            "--title", "Report",
+            "--type-system", "http://loinc.org",
+            "--type-code", "11488-4",
+        )
+        assert c["resourceType"] == "Composition"
+        assert c["id"] == "report"
+        assert c["title"] == "Report"
+        assert c["status"] == "final"
+        assert c["type"]["coding"][0]["system"] == "http://loinc.org"
+        assert c["type"]["coding"][0]["code"] == "11488-4"
+
+    def test_with_display(self) -> None:
+        c = run(
+            "composition", "init",
+            "--id", "r", "--title", "R",
+            "--type-system", "http://loinc.org", "--type-code", "11488-4",
+            "--type-display", "Consultation note",
+        )
+        assert c["type"]["coding"][0]["display"] == "Consultation note"
+
+    def test_custom_status(self) -> None:
+        c = run(
+            "composition", "init",
+            "--id", "r", "--title", "R",
+            "--type-system", "http://loinc.org", "--type-code", "11488-4",
+            "--status", "preliminary",
+        )
+        assert c["status"] == "preliminary"
+
+
+def _init_composition() -> str:
+    """Return JSON string of a minimal Composition."""
+    c = run(
+        "composition", "init",
+        "--id", "report", "--title", "Report",
+        "--type-system", "http://loinc.org", "--type-code", "11488-4",
+    )
+    return json.dumps(c)
+
+
+class TestCompositionSectionAdd:
+    def test_root_section(self) -> None:
+        c = run(
+            "composition", "section", "add",
+            "--title", "Findings",
+            "--context", "%resource.item.where(linkId='findings')",
+            "--text", "<p>Content</p>",
+            input_json=_init_composition(),
+        )
+        assert len(c["section"]) == 1
+        assert c["section"][0]["title"] == "Findings"
+        assert "Content" in c["section"][0]["text"]["div"]
+
+    def test_nested_section(self) -> None:
+        comp_json = _init_composition()
+        c = run(
+            "composition", "section", "add",
+            "--title", "Parent",
+            input_json=comp_json,
+        )
+        c = run(
+            "composition", "section", "add",
+            "--title", "Child",
+            "--parent", "Parent",
+            "--text", "<p>nested</p>",
+            input_json=json.dumps(c),
+        )
+        assert len(c["section"]) == 1
+        assert len(c["section"][0]["section"]) == 1
+        assert c["section"][0]["section"][0]["title"] == "Child"
+
+    def test_with_text_file(self) -> None:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".html", delete=False, encoding="utf-8"
+        ) as f:
+            f.write("<p>from file</p>")
+            tmp_path = f.name
+        try:
+            c = run(
+                "composition", "section", "add",
+                "--title", "FromFile",
+                "--text-file", tmp_path,
+                input_json=_init_composition(),
+            )
+            assert "from file" in c["section"][0]["text"]["div"]
+        finally:
+            os.unlink(tmp_path)
+
+    def test_duplicate_title_error(self) -> None:
+        comp_json = _init_composition()
+        c = run(
+            "composition", "section", "add",
+            "--title", "A",
+            input_json=comp_json,
+        )
+        result = run_raw(
+            "composition", "section", "add",
+            "--title", "A",
+            input_json=json.dumps(c),
+        )
+        assert result.exit_code != 0
+
+
+class TestCompositionSectionSetContext:
+    def test_set(self) -> None:
+        comp_json = _init_composition()
+        c = run(
+            "composition", "section", "add",
+            "--title", "A",
+            input_json=comp_json,
+        )
+        c = run(
+            "composition", "section", "set-context",
+            "--title", "A",
+            "--context", "%resource.item.where(linkId='q1')",
+            input_json=json.dumps(c),
+        )
+        ext = c["section"][0]["extension"][0]
+        assert ext["valueString"] == "%resource.item.where(linkId='q1')"
+
+
+class TestCompositionSectionSetText:
+    def test_set(self) -> None:
+        comp_json = _init_composition()
+        c = run(
+            "composition", "section", "add",
+            "--title", "A",
+            input_json=comp_json,
+        )
+        c = run(
+            "composition", "section", "set-text",
+            "--title", "A",
+            "--text", "<p>updated</p>",
+            input_json=json.dumps(c),
+        )
+        assert "updated" in c["section"][0]["text"]["div"]
+
+
+class TestCompositionPipeChain:
+    def test_full_pipeline(self) -> None:
+        """Build a small Composition via pipe chain and verify structure."""
+        c = run(
+            "composition", "init",
+            "--id", "report", "--title", "Colonoscopy",
+            "--type-system", "http://loinc.org", "--type-code", "11488-4",
+        )
+        c = run(
+            "composition", "section", "add",
+            "--title", "Procedure",
+            "--context", "%resource.item.where(linkId='group')",
+            "--text", "<p>Date: {{%context.item.where(linkId='datum').answer.value}}</p>",
+            input_json=json.dumps(c),
+        )
+        c = run(
+            "composition", "section", "add",
+            "--title", "Findings",
+            "--context", "%resource.item.where(linkId='findings')",
+            "--text", "<!-- sections -->",
+            input_json=json.dumps(c),
+        )
+        c = run(
+            "composition", "section", "add",
+            "--title", "Polyps",
+            "--parent", "Findings",
+            "--context", "%context.item.where(linkId='polyp')",
+            "--text", "<p>Location: {{%context.item.where(linkId='locatie').answer.value.display}}</p>",
+            input_json=json.dumps(c),
+        )
+        # Verify structure
+        assert c["resourceType"] == "Composition"
+        assert c["id"] == "report"
+        assert len(c["section"]) == 2
+        assert c["section"][0]["title"] == "Procedure"
+        assert c["section"][1]["title"] == "Findings"
+        # Nested polyp section
+        findings = c["section"][1]
+        assert len(findings["section"]) == 1
+        assert findings["section"][0]["title"] == "Polyps"
+        # Context extensions present
+        assert findings["section"][0]["extension"][0]["valueString"].startswith("%context")
