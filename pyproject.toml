@@ -24,6 +24,8 @@ dependencies = [
 Homepage = "https://github.com/Tiro-health/fhir-sdc-tools"
 Repository = "https://github.com/Tiro-health/fhir-sdc-tools"
 Issues = "https://github.com/Tiro-health/fhir-sdc-tools/issues"
+"Bug Tracker" = "https://github.com/Tiro-health/fhir-sdc-tools/issues"
+"Source" = "https://github.com/Tiro-health/fhir-sdc-tools"
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.26.0"]
@@ -31,10 +33,6 @@ mcp = ["mcp>=1.26.0"]
 [project.scripts]
 sdc = "sdc.cli:cli"
 fhir-sdc-mcp = "sdc.server:main [mcp]"
-
-[project.urls]
-"Bug Tracker" = "https://github.com/Tiro-health/fhir-sdc-tools/issues"
-"Source" = "https://github.com/Tiro-health/fhir-sdc-tools"
 
 [build-system]
 requires = ["hatchling"]
