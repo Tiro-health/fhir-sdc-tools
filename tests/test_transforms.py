@@ -15,11 +15,18 @@ from sdc.models import (
     QuestionnaireItemType,
     set_fhir_version,
 )
+from sdc.composition import (
+    TEMPLATE_EXTRACT_PROFILE,
+    TEMPLATE_EXTRACT_URL,
+    Composition,
+    section,
+)
 from sdc.transforms import (
     add_answer_option,
     add_enable_when,
     add_extension,
     add_item,
+    add_template_extract,
     add_translation,
     find_item,
     remove_extension,
@@ -419,3 +426,88 @@ class TestAddTranslation:
         q = _make_q_with_choice_item()
         with pytest.raises(ValueError, match="No answerOption with code"):
             add_translation(q, "nl", "test", link_id="1", answer_code="nonexistent")
+
+
+def _make_composition() -> Composition:
+    """Helper: minimal Composition for template extract tests."""
+    return Composition(
+        id="comp-1",
+        type={"coding": [{"system": "http://loinc.org", "code": "11488-4"}]},
+        title="Test Report",
+        section=[section(title="Findings", text="content")],
+    )
+
+
+class TestAddTemplateExtract:
+    def test_adds_contained_composition(
+        self, empty_questionnaire: Questionnaire
+    ) -> None:
+        comp = _make_composition()
+        result = add_template_extract(empty_questionnaire, comp)
+        contained = _get_extra(result, "contained")
+        assert contained is not None
+        assert len(contained) == 1
+        assert contained[0]["resourceType"] == "Composition"
+        assert contained[0]["id"] == "comp-1"
+
+    def test_adds_template_extract_extension(
+        self, empty_questionnaire: Questionnaire
+    ) -> None:
+        comp = _make_composition()
+        result = add_template_extract(empty_questionnaire, comp)
+        assert result.extension is not None
+        ext_urls = [e.url for e in result.extension]
+        assert TEMPLATE_EXTRACT_URL in ext_urls
+        ext = next(e for e in result.extension if e.url == TEMPLATE_EXTRACT_URL)
+        # SDC spec: complex extension with nested sub-extensions
+        sub_exts = getattr(ext, "__pydantic_extra__", {}).get("extension", [])
+        assert len(sub_exts) == 1
+        assert sub_exts[0]["url"] == "template"
+        assert sub_exts[0]["valueReference"]["reference"] == "#comp-1"
+
+    def test_adds_profile(self, empty_questionnaire: Questionnaire) -> None:
+        comp = _make_composition()
+        result = add_template_extract(empty_questionnaire, comp)
+        assert result.meta is not None
+        assert TEMPLATE_EXTRACT_PROFILE in result.meta.profile
+
+    def test_immutability(self, empty_questionnaire: Questionnaire) -> None:
+        comp = _make_composition()
+        original_meta = empty_questionnaire.meta
+        original_ext = empty_questionnaire.extension
+        add_template_extract(empty_questionnaire, comp)
+        assert empty_questionnaire.meta is original_meta
+        assert empty_questionnaire.extension is original_ext
+        assert _get_extra(empty_questionnaire, "contained") is None
+
+    def test_preserves_existing_extensions(
+        self, empty_questionnaire: Questionnaire
+    ) -> None:
+        ext = Extension.model_validate(
+            {"url": "http://example.org/ext", "valueString": "keep"}
+        )
+        q = empty_questionnaire.model_copy(update={"extension": [ext]})
+        comp = _make_composition()
+        result = add_template_extract(q, comp)
+        assert len(result.extension) == 2
+        assert result.extension[0].url == "http://example.org/ext"
+
+    def test_preserves_existing_profiles(
+        self, empty_questionnaire: Questionnaire
+    ) -> None:
+        from sdc.models import Meta
+
+        q = empty_questionnaire.model_copy(
+            update={
+                "meta": Meta(
+                    profile=["http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire"]
+                )
+            }
+        )
+        comp = _make_composition()
+        result = add_template_extract(q, comp)
+        assert len(result.meta.profile) == 2
+        assert (
+            "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire"
+            in result.meta.profile
+        )

@@ -7,6 +7,13 @@ import sys
 
 import click
 
+from sdc.composition import (
+    Composition,
+    add_section,
+    section,
+    set_section_context,
+    set_section_text,
+)
 from sdc.models import (
     EnableWhen,
     EnableWhenOperator,
@@ -25,6 +32,7 @@ from sdc.transforms import (
     add_enable_when,
     add_extension,
     add_item,
+    add_template_extract,
     add_translation,
     extract_texts,
     remove_extension,
@@ -815,6 +823,219 @@ def validate_cmd() -> None:
     warnings = validate(q)
     for w in warnings:
         click.echo(f"WARNING: {w}", err=True)
+    write_stdout(q)
+
+
+# --- template ---
+
+# --- composition ---
+
+
+def read_composition_stdin() -> Composition:
+    """Read a Composition JSON from stdin."""
+    if sys.stdin.isatty():
+        raise click.UsageError(
+            "No input on stdin. Pipe a composition or use 'sdc composition init'."
+        )
+    data = json.loads(sys.stdin.read())
+    return Composition.model_validate(data)
+
+
+def write_composition_stdout(c: Composition) -> None:
+    """Write a Composition as JSON to stdout."""
+    click.echo(c.model_dump_json(by_alias=True, exclude_none=True, indent=2))
+
+
+COMPOSITION_INIT_EPILOG = """
+Creates a new Composition resource for SDC template-based extraction.
+
+\\b
+Examples:
+  sdc composition init --id report --title "Report" \\
+    --type-system http://loinc.org --type-code 11488-4
+  sdc composition init --id report --title "Report" \\
+    --type-system http://loinc.org --type-code 11488-4 \\
+    --type-display "Consultation note"
+"""
+
+COMPOSITION_SECTION_ADD_EPILOG = """
+Add a section to a Composition. Nest under --parent (by title) if given.
+
+\\b
+Examples:
+  sdc composition init ... \\
+    | sdc composition section add --title "Findings" \\
+        --context "%resource.item.where(linkId='findings')" \\
+        --text "<p>content</p>"
+  sdc composition section add --title "Details" --parent "Findings" \\
+    --context "%context.where(...)" --text-file details.html
+"""
+
+COMPOSITION_SECTION_SET_CONTEXT_EPILOG = """
+Set or update the templateExtractContext FHIRPath on a section.
+
+\\b
+Examples:
+  sdc composition section set-context --title "Findings" \\
+    --context "%resource.item.where(linkId='findings')"
+"""
+
+COMPOSITION_SECTION_SET_TEXT_EPILOG = """
+Set or update the Narrative text on a section. HTML is auto-wrapped in a
+FHIR XHTML div. Use --text for inline or --text-file for file content.
+
+\\b
+Examples:
+  sdc composition section set-text --title "Findings" \\
+    --text "<p>Date: {{%context.item.where(linkId='date').answer.value}}</p>"
+  sdc composition section set-text --title "Findings" --text-file findings.html
+"""
+
+
+@cli.group()
+def composition() -> None:
+    """Build Composition templates for SDC template-based extraction."""
+
+
+@composition.command("init", epilog=COMPOSITION_INIT_EPILOG)
+@click.option("--id", "comp_id", required=True, help="Resource ID (used as #id reference).")
+@click.option("--title", required=True, help="Composition title.")
+@click.option("--type-system", required=True, help="Type coding system (e.g. http://loinc.org).")
+@click.option("--type-code", required=True, help="Type coding code (e.g. 11488-4).")
+@click.option("--type-display", default=None, help="Type coding display text.")
+@click.option("--status", default="final", help="Composition status (default: final).")
+def composition_init(
+    comp_id: str,
+    title: str,
+    type_system: str,
+    type_code: str,
+    type_display: str | None,
+    status: str,
+) -> None:
+    """Create a new Composition resource."""
+    type_coding: dict[str, str] = {"system": type_system, "code": type_code}
+    if type_display:
+        type_coding["display"] = type_display
+    c = Composition(
+        id=comp_id,
+        status=status,
+        type={"coding": [type_coding]},
+        title=title,
+    )
+    write_composition_stdout(c)
+
+
+@composition.group("section")
+def composition_section() -> None:
+    """Add or modify Composition sections."""
+
+
+@composition_section.command("add", epilog=COMPOSITION_SECTION_ADD_EPILOG)
+@click.option("--title", required=True, help="Section title (also the identifier for --parent).")
+@click.option("--parent", "parent_title", default=None, help="Parent section title to nest under.")
+@click.option("--context", default=None, help="templateExtractContext FHIRPath expression.")
+@click.option("--text", "text_inline", default=None, help="Inner HTML content.")
+@click.option(
+    "--text-file",
+    "text_file",
+    default=None,
+    type=click.Path(exists=True),
+    help="Read HTML content from file (mutually exclusive with --text).",
+)
+def composition_section_add(
+    title: str,
+    parent_title: str | None,
+    context: str | None,
+    text_inline: str | None,
+    text_file: str | None,
+) -> None:
+    """Add a section to the Composition."""
+    if text_inline and text_file:
+        raise click.UsageError("Provide --text or --text-file, not both.")
+    text = text_inline or ""
+    if text_file:
+        with open(text_file, encoding="utf-8") as f:
+            text = f.read().strip()
+    c = read_composition_stdin()
+    new_sec = section(title=title, context=context, text=text)
+    c = add_section(c, new_sec, parent_title=parent_title)
+    write_composition_stdout(c)
+
+
+@composition_section.command("set-context", epilog=COMPOSITION_SECTION_SET_CONTEXT_EPILOG)
+@click.option("--title", required=True, help="Target section title.")
+@click.option("--context", required=True, help="templateExtractContext FHIRPath expression.")
+def composition_section_set_context_cmd(title: str, context: str) -> None:
+    """Set or update the templateExtractContext on a section."""
+    c = read_composition_stdin()
+    c = set_section_context(c, title, context)
+    write_composition_stdout(c)
+
+
+@composition_section.command("set-text", epilog=COMPOSITION_SECTION_SET_TEXT_EPILOG)
+@click.option("--title", required=True, help="Target section title.")
+@click.option("--text", "text_inline", default=None, help="Inner HTML content.")
+@click.option(
+    "--text-file",
+    "text_file",
+    default=None,
+    type=click.Path(exists=True),
+    help="Read HTML content from file (mutually exclusive with --text).",
+)
+def composition_section_set_text_cmd(
+    title: str, text_inline: str | None, text_file: str | None
+) -> None:
+    """Set or update the Narrative text on a section."""
+    if text_inline and text_file:
+        raise click.UsageError("Provide --text or --text-file, not both.")
+    if not text_inline and not text_file:
+        raise click.UsageError("Provide --text or --text-file.")
+    text = text_inline or ""
+    if text_file:
+        with open(text_file, encoding="utf-8") as f:
+            text = f.read().strip()
+    c = read_composition_stdin()
+    c = set_section_text(c, title, text)
+    write_composition_stdout(c)
+
+
+# --- template ---
+
+TEMPLATE_EMBED_EPILOG = """
+Reads a Composition JSON file and embeds it into the piped questionnaire
+for SDC template-based extraction. Adds the Composition as a contained
+resource, wires up the templateExtract extension, and sets the profile.
+
+\b
+Examples:
+  sdc template embed --file composition.json < questionnaire.json
+  sdc init --url http://example.org/q1 --title "Report" \\
+    | sdc item add --link-id 1 --text "Q1" --type string \\
+    | sdc template embed --file composition.json \\
+    | sdc validate
+"""
+
+
+@cli.group()
+def template() -> None:
+    """Manage template-based extraction resources."""
+
+
+@template.command("embed", epilog=TEMPLATE_EMBED_EPILOG)
+@click.option(
+    "--file",
+    "file_path",
+    required=True,
+    type=click.Path(exists=True),
+    help="Path to a Composition JSON file.",
+)
+def template_embed(file_path: str) -> None:
+    """Embed a Composition for template-based extraction."""
+    q = read_stdin()
+    with open(file_path, encoding="utf-8") as f:
+        comp_data = json.load(f)
+    comp = Composition.model_validate(comp_data)
+    q = add_template_extract(q, comp)
     write_stdout(q)
 
 
