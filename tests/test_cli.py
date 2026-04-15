@@ -972,3 +972,77 @@ class TestCompositionPipeChain:
         assert findings["section"][0]["title"] == "Polyps"
         # Context extensions present
         assert findings["section"][0]["extension"][0]["valueString"].startswith("%context")
+
+
+class TestPipeChainSubprocess:
+    """Test pipe chaining with real subprocesses (not CliRunner) to catch
+    buffering, SIGPIPE, and broken-pipe issues that only manifest in real
+    shell pipelines."""
+
+    def test_many_variable_extensions_via_subprocess(self) -> None:
+        """Reproduce issue #26: pipe breaks after ~8-10 chained 'sdc extension
+        add variable' commands when reading from cat."""
+        import subprocess
+
+        # Build a non-trivial base questionnaire (20+ items)
+        init_json = json.dumps(
+            run("init", "--url", "http://example.org/q1", "--title", "Pipe Test")
+        )
+        q = json.loads(init_json)
+        for i in range(1, 21):
+            q = run(
+                "item", "add",
+                "--link-id", f"item-{i}",
+                "--text", f"Question {i} with some extra text to increase size",
+                "--type", "string",
+                input_json=json.dumps(q),
+            )
+        base_json = json.dumps(q)
+
+        # Build a shell pipeline: echo JSON | sdc ext add var ... | ... (12 stages)
+        NUM_VARS = 12
+        pipeline = "cat"
+        for i in range(1, NUM_VARS + 1):
+            pipeline += (
+                f" | sdc extension add variable"
+                f" --name var{i}"
+                f" --expression \"%resource.item.where(linkId='item-{i}').answer.value\""
+            )
+
+        result = subprocess.run(
+            pipeline,
+            shell=True,
+            input=base_json.encode("utf-8"),
+            capture_output=True,
+            timeout=60,
+        )
+        assert result.returncode == 0, (
+            f"Pipeline failed (exit {result.returncode}).\n"
+            f"stderr: {result.stderr.decode('utf-8', errors='replace')}"
+        )
+
+        data = json.loads(result.stdout)
+        assert data["resourceType"] == "Questionnaire"
+
+        # All 12 new variables should be present
+        var_names = [
+            ext["valueExpression"]["name"]
+            for ext in data.get("extension", [])
+            if "valueExpression" in ext and "name" in ext.get("valueExpression", {})
+        ]
+        for i in range(1, NUM_VARS + 1):
+            assert f"var{i}" in var_names, f"var{i} missing from output"
+
+    def test_empty_stdin_gives_clear_error(self) -> None:
+        """When stdin is empty (upstream failed), error message should be
+        helpful, not a raw JSONDecodeError."""
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            ["extension", "add", "variable", "--name", "x", "--expression", "1"],
+            input="",
+        )
+        assert result.exit_code != 0
+        assert "Empty input on stdin" in result.output or "Empty input on stdin" in str(
+            result.exception
+        )
