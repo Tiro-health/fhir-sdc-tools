@@ -104,8 +104,13 @@ INIT_EPILOG = """
 \b
 Examples:
   sdc init --url http://example.org/q1 --title "Intake Form"
+  sdc init --url http://example.org/q1 --title "Intake Form" --name IntakeForm
   sdc init --url http://example.org/q1 --title "R5 Form" --fhir-version R5
   SDC_FHIR_VERSION=R5 sdc init --url http://example.org/q1 --title "R5 Form"
+
+--name sets a computer-friendly identifier (Questionnaire.name) distinct from --title.
+Use it when the questionnaire needs a stable, machine-readable name for programmatic
+look-up (e.g. in APIs or StructureDefinition references).
 """
 
 
@@ -819,6 +824,7 @@ META_EPILOG = """
 Examples:
   sdc meta --status active --publisher "My Org"
   sdc meta --language en --description "Patient intake form"
+  sdc meta --name IntakeForm --title "Patient Intake Form"
 """
 
 
