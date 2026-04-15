@@ -37,6 +37,7 @@ from sdc.transforms import (
     extract_texts,
     remove_extension,
     remove_item,
+    set_answer_option_weight,
     set_answer_value_set,
     set_enable_behavior,
     set_meta,
@@ -333,7 +334,8 @@ def enable_when_set_behavior(link_id: str, behavior: str) -> None:
 
 ANSWER_OPTION_ADD_EPILOG = """
 Provide exactly one --value-* flag per invocation. Pipe multiple times
-to add several options.
+to add several options. Use --weight to attach an itemWeight extension
+to the answer option (useful for scoring questionnaires).
 
 \b
 Coding format: system|code[|display]  (display is optional)
@@ -343,6 +345,8 @@ Examples:
   sdc answer-option add --link-id 1 --value-integer 42
   sdc answer-option add --link-id 1 \\
     --value-coding "http://snomed.info/sct|73211009|Diabetes mellitus"
+  sdc answer-option add --link-id 1 \\
+    --value-coding "|yes|Yes" --weight 2
 """
 
 
@@ -360,13 +364,22 @@ def answer_option_group() -> None:
     default=None,
     help="Coding as 'system|code|display' (display optional).",
 )
+@click.option(
+    "--weight",
+    type=float,
+    default=None,
+    help="Attach itemWeight extension with this value.",
+)
 def answer_option_add(
     link_id: str,
     value_string: str | None,
     value_integer: int | None,
     value_coding: str | None,
+    weight: float | None,
 ) -> None:
     """Add an answer option to an item."""
+    from sdc.models import ITEM_WEIGHT_URL
+
     q = read_stdin()
 
     option: dict[str, object] = {}
@@ -384,6 +397,11 @@ def answer_option_add(
         raise click.UsageError(
             "Provide --value-string, --value-integer, or --value-coding."
         )
+
+    if weight is not None:
+        option["extension"] = [
+            {"url": ITEM_WEIGHT_URL, "valueDecimal": weight},
+        ]
 
     q = add_answer_option(q, link_id, option)
     write_stdout(q)
@@ -404,6 +422,52 @@ def answer_option_set_value_set(link_id: str, url: str) -> None:
     """Set answerValueSet on an item (alternative to inline answer options)."""
     q = read_stdin()
     q = set_answer_value_set(q, link_id, url)
+    write_stdout(q)
+
+
+ANSWER_OPTION_SET_WEIGHT_EPILOG = """
+Attach the FHIR itemWeight extension to an existing answer option.
+Identify the target option by --answer-code (valueCoding.code) or
+--answer-index (0-based position). Useful for building weight-based
+scoring questionnaires (e.g. DIPSS, Glasgow Coma Scale).
+
+\b
+Examples:
+  sdc answer-option set-weight --link-id 1 --answer-code yes --weight 2
+  sdc answer-option set-weight --link-id 1 --answer-index 0 --weight 1.5
+"""
+
+
+@answer_option_group.command("set-weight", epilog=ANSWER_OPTION_SET_WEIGHT_EPILOG)
+@click.option("--link-id", "link_id", required=True, help="Target item linkId.")
+@click.option(
+    "--answer-code",
+    default=None,
+    help="Match answerOption by valueCoding.code.",
+)
+@click.option(
+    "--answer-index",
+    type=int,
+    default=None,
+    help="Match answerOption by 0-based index.",
+)
+@click.option(
+    "--weight",
+    type=float,
+    required=True,
+    help="Weight value (valueDecimal) for the itemWeight extension.",
+)
+def answer_option_set_weight(
+    link_id: str,
+    answer_code: str | None,
+    answer_index: int | None,
+    weight: float,
+) -> None:
+    """Set itemWeight extension on an answer option."""
+    q = read_stdin()
+    q = set_answer_option_weight(
+        q, link_id, weight, answer_code=answer_code, answer_index=answer_index
+    )
     write_stdout(q)
 
 

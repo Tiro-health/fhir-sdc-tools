@@ -272,6 +272,74 @@ class TestAnswerOption:
         )
         assert q["item"][0]["answerValueSet"] == "http://example.org/vs"
 
+    def test_add_with_weight(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "item", "add", "--link-id", "1", "--text", "Q1", "--type", "choice",
+            input_json=init_json,
+        )
+        q = run(
+            "answer-option", "add",
+            "--link-id", "1",
+            "--value-coding", "|yes|Yes",
+            "--weight", "2",
+            input_json=json.dumps(q),
+        )
+        opt = q["item"][0]["answerOption"][0]
+        assert opt["valueCoding"]["code"] == "yes"
+        assert len(opt["extension"]) == 1
+        assert opt["extension"][0]["url"] == "http://hl7.org/fhir/StructureDefinition/itemWeight"
+        assert opt["extension"][0]["valueDecimal"] == 2.0
+
+    def test_set_weight_by_code(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "item", "add", "--link-id", "1", "--text", "Q1", "--type", "choice",
+            input_json=init_json,
+        )
+        q = run(
+            "answer-option", "add", "--link-id", "1",
+            "--value-coding", "|yes|Yes",
+            input_json=json.dumps(q),
+        )
+        q = run(
+            "answer-option", "add", "--link-id", "1",
+            "--value-coding", "|no|No",
+            input_json=json.dumps(q),
+        )
+        q = run(
+            "answer-option", "set-weight",
+            "--link-id", "1",
+            "--answer-code", "yes",
+            "--weight", "2",
+            input_json=json.dumps(q),
+        )
+        opt_yes = q["item"][0]["answerOption"][0]
+        opt_no = q["item"][0]["answerOption"][1]
+        assert opt_yes["extension"][0]["valueDecimal"] == 2.0
+        assert "extension" not in opt_no
+
+    def test_set_weight_by_index(self) -> None:
+        init_json = json.dumps(run("init", "--url", "http://e.org", "--title", "T"))
+        q = run(
+            "item", "add", "--link-id", "1", "--text", "Q1", "--type", "choice",
+            input_json=init_json,
+        )
+        q = run(
+            "answer-option", "add", "--link-id", "1",
+            "--value-string", "Option A",
+            input_json=json.dumps(q),
+        )
+        q = run(
+            "answer-option", "set-weight",
+            "--link-id", "1",
+            "--answer-index", "0",
+            "--weight", "1.5",
+            input_json=json.dumps(q),
+        )
+        opt = q["item"][0]["answerOption"][0]
+        assert opt["extension"][0]["valueDecimal"] == 1.5
+
 
 class TestExtension:
     def test_add_hidden(self) -> None:

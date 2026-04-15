@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from sdc.models import (
+    ITEM_WEIGHT_URL,
     TRANSLATION_URL,
     EnableWhen,
     EnableWhenOperator,
@@ -31,6 +32,7 @@ from sdc.transforms import (
     find_item,
     remove_extension,
     remove_item,
+    set_answer_option_weight,
     set_answer_value_set,
     set_enable_behavior,
     set_meta,
@@ -152,6 +154,78 @@ class TestSetAnswerValueSet:
         )
         item = find_item(result.item, "1")
         assert item.answer_value_set == "http://example.org/vs"
+
+
+class TestSetAnswerOptionWeight:
+    @pytest.fixture
+    def q_with_coding_options(self) -> Questionnaire:
+        return Questionnaire(
+            url="http://example.org/q1",
+            title="Test",
+            item=[
+                QuestionnaireItem(
+                    link_id="1",
+                    text="Q1",
+                    type=QuestionnaireItemType.CHOICE,
+                    answer_option=[
+                        {"valueCoding": {"system": "http://example.org", "code": "yes", "display": "Yes"}},
+                        {"valueCoding": {"system": "http://example.org", "code": "no", "display": "No"}},
+                    ],
+                ),
+            ],
+        )
+
+    def test_set_weight_by_code(self, q_with_coding_options: Questionnaire) -> None:
+        result = set_answer_option_weight(
+            q_with_coding_options, "1", 2.0, answer_code="yes"
+        )
+        item = find_item(result.item, "1")
+        opt = item.answer_option[0]
+        assert len(opt["extension"]) == 1
+        assert opt["extension"][0]["url"] == ITEM_WEIGHT_URL
+        assert opt["extension"][0]["valueDecimal"] == 2.0
+
+    def test_set_weight_by_index(self, q_with_coding_options: Questionnaire) -> None:
+        result = set_answer_option_weight(
+            q_with_coding_options, "1", 0.0, answer_index=1
+        )
+        item = find_item(result.item, "1")
+        opt = item.answer_option[1]
+        assert opt["extension"][0]["url"] == ITEM_WEIGHT_URL
+        assert opt["extension"][0]["valueDecimal"] == 0.0
+
+    def test_replaces_existing_weight(self, q_with_coding_options: Questionnaire) -> None:
+        result = set_answer_option_weight(
+            q_with_coding_options, "1", 1.0, answer_code="yes"
+        )
+        result = set_answer_option_weight(result, "1", 5.0, answer_code="yes")
+        item = find_item(result.item, "1")
+        opt = item.answer_option[0]
+        assert len(opt["extension"]) == 1
+        assert opt["extension"][0]["valueDecimal"] == 5.0
+
+    def test_unknown_code_raises(self, q_with_coding_options: Questionnaire) -> None:
+        with pytest.raises(ValueError, match="No answerOption with code 'unknown'"):
+            set_answer_option_weight(
+                q_with_coding_options, "1", 1.0, answer_code="unknown"
+            )
+
+    def test_index_out_of_range_raises(self, q_with_coding_options: Questionnaire) -> None:
+        with pytest.raises(ValueError, match="out of range"):
+            set_answer_option_weight(
+                q_with_coding_options, "1", 1.0, answer_index=99
+            )
+
+    def test_no_identifier_raises(self, q_with_coding_options: Questionnaire) -> None:
+        with pytest.raises(ValueError, match="Provide answer_code or answer_index"):
+            set_answer_option_weight(q_with_coding_options, "1", 1.0)
+
+    def test_both_identifiers_raises(self, q_with_coding_options: Questionnaire) -> None:
+        with pytest.raises(ValueError, match="not both"):
+            set_answer_option_weight(
+                q_with_coding_options, "1", 1.0,
+                answer_code="yes", answer_index=0,
+            )
 
 
 class TestAddExtension:
