@@ -15,6 +15,7 @@ from sdc.composition import (
 )
 from sdc.models import (
     ITEM_TYPES_FOR_VERSION,
+    ITEM_WEIGHT_URL,
     TRANSLATION_URL,
     EnableWhen,
     Extension,
@@ -158,6 +159,65 @@ def set_answer_value_set(
         return item.model_copy(update={"answer_value_set": value_set_url})
 
     return q.model_copy(update={"item": _map_items(q.item, link_id, _set_vs)})
+
+
+def _set_weight_on_option(option: dict[str, object], weight: float) -> dict[str, object]:
+    """Set the itemWeight extension on a single answer option dict."""
+    option = copy.deepcopy(option)
+    exts = [
+        e for e in option.get("extension", []) if e.get("url") != ITEM_WEIGHT_URL
+    ]
+    exts.append({"url": ITEM_WEIGHT_URL, "valueDecimal": weight})
+    option["extension"] = exts
+    return option
+
+
+def set_answer_option_weight(
+    q: Questionnaire,
+    link_id: str,
+    weight: float,
+    answer_code: str | None = None,
+    answer_index: int | None = None,
+) -> Questionnaire:
+    """Set the itemWeight extension on an answer option.
+
+    Identify the option by answer_code (valueCoding.code) or answer_index.
+    Exactly one must be provided.
+    """
+    if answer_code is None and answer_index is None:
+        raise ValueError("Provide answer_code or answer_index.")
+    if answer_code is not None and answer_index is not None:
+        raise ValueError("Provide answer_code or answer_index, not both.")
+
+    if not q.item or find_item(q.item, link_id) is None:
+        raise ValueError(f"Item '{link_id}' not found.")
+
+    def _set_weight(item: QuestionnaireItem) -> QuestionnaireItem:
+        if not item.answer_option:
+            raise ValueError(f"Item '{item.link_id}' has no answerOptions.")
+        new_options = list(item.answer_option)
+        if answer_code is not None:
+            for i, opt in enumerate(new_options):
+                coding = opt.get("valueCoding")
+                if coding and coding.get("code") == answer_code:
+                    new_options[i] = _set_weight_on_option(opt, weight)
+                    return item.model_copy(update={"answer_option": new_options})
+            raise ValueError(
+                f"No answerOption with code '{answer_code}' on item '{item.link_id}'."
+            )
+        else:
+            assert answer_index is not None
+            if answer_index >= len(new_options):
+                raise ValueError(
+                    f"answerOption index {answer_index} out of range "
+                    f"on item '{item.link_id}'."
+                )
+            new_options[answer_index] = _set_weight_on_option(
+                new_options[answer_index], weight
+            )
+            return item.model_copy(update={"answer_option": new_options})
+
+    return q.model_copy(update={"item": _map_items(q.item, link_id, _set_weight)})
 
 
 def add_extension(

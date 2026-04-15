@@ -100,6 +100,7 @@ SDC_BASE = "http://hl7.org/fhir/uv/sdc/StructureDefinition"
 FHIR_BASE = "http://hl7.org/fhir/StructureDefinition"
 
 TRANSLATION_URL = f"{FHIR_BASE}/translation"
+ITEM_WEIGHT_URL = f"{FHIR_BASE}/itemWeight"
 
 SDC_URLS: dict[str, str] = {
     "hidden": f"{FHIR_BASE}/questionnaire-hidden",
