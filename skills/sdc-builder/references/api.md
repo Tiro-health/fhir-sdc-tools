@@ -30,11 +30,13 @@ q = Questionnaire(
     url="http://example.org/q1",      # Canonical URL
     title="My Form",                   # Human-readable title
     status=PublicationStatus.DRAFT,     # draft | active | retired | unknown
-    name="my-form",                    # Computer-friendly name (optional)
+    name="MyForm",                     # Computer-friendly name (optional)
     publisher="Org name",              # Publisher (optional)
     description="A form",             # Description (optional)
 )
 ```
+
+`name` is a computer-friendly identifier (e.g. `"MyForm"`) used for programmatic look-up, distinct from `title` which is the human-readable display label.
 
 ### QuestionnaireItem
 

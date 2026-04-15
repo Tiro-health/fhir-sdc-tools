@@ -67,11 +67,15 @@ print(q.model_dump_json(by_alias=True, exclude_none=True, indent=2))
 ```bash
 pip install fhir-sdc-tools
 
-sdc init --url http://example.org/q1 --title "My Form" \
+sdc init --url http://example.org/q1 --title "My Form" --name MyForm \
   | sdc item add --link-id 1 --text "Name" --type string \
   | sdc item add --link-id 2 --text "Age" --type integer \
   | sdc validate
 ```
+
+`--name` sets an optional computer-friendly identifier (`Questionnaire.name`), distinct
+from `--title` (the human-readable label). Use it when you need a stable, machine-readable
+name for programmatic look-up. Both `sdc init` and `sdc meta` accept this flag.
 
 Extensions (SDC shortcuts and custom URLs):
 
