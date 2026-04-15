@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
 import sys
 
 import click
+
+# Restore default SIGPIPE handling so that broken pipes terminate the process
+# cleanly instead of raising BrokenPipeError.  This prevents cascading failures
+# when many CLI commands are chained with shell pipes.
+if hasattr(signal, "SIGPIPE"):
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 from sdc.composition import (
     Composition,
@@ -48,19 +56,59 @@ from sdc.transforms import (
 # --- IO Helpers ---
 
 
-def read_stdin() -> Questionnaire:
-    """Read a Questionnaire JSON from stdin."""
+def _read_stdin_bytes() -> bytes:
+    """Read raw bytes from stdin, raising a clear error when stdin is empty."""
     if sys.stdin.isatty():
         raise click.UsageError(
-            "No input on stdin. Pipe a questionnaire or use 'sdc init'."
+            "No input on stdin. Pipe a resource or use an 'init' command."
         )
-    data = json.loads(sys.stdin.read())
+    # Read via the binary buffer to bypass TextIOWrapper encoding overhead
+    # and reduce buffering layers in long pipe chains.
+    buf = getattr(sys.stdin, "buffer", None)
+    raw = buf.read() if buf is not None else sys.stdin.read().encode("utf-8")
+    if not raw or not raw.strip():
+        raise click.UsageError(
+            "Empty input on stdin. The upstream command may have failed.\n"
+            "Hint: check earlier commands in the pipeline for errors."
+        )
+    return raw
+
+
+def read_stdin() -> Questionnaire:
+    """Read a Questionnaire JSON from stdin."""
+    data = json.loads(_read_stdin_bytes())
     return Questionnaire.model_validate(data)
+
+
+def _write_bytes_stdout(data: bytes) -> None:
+    """Write raw bytes to stdout, handling broken pipes gracefully."""
+    try:
+        buf = getattr(sys.stdout, "buffer", None)
+        if buf is not None:
+            buf.write(data)
+            buf.write(b"\n")
+            buf.flush()
+        else:
+            # Fallback for environments without binary buffer (e.g. CliRunner)
+            sys.stdout.write(data.decode("utf-8"))
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+    except BrokenPipeError:
+        # Downstream process closed the pipe — exit quietly.
+        # Redirect stdout to /dev/null to suppress Python's cleanup errors.
+        try:
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, sys.stdout.fileno())
+            os.close(devnull)
+        except OSError:
+            pass
+        sys.exit(0)
 
 
 def write_stdout(q: Questionnaire) -> None:
     """Write a Questionnaire as JSON to stdout."""
-    click.echo(q.model_dump_json(by_alias=True, exclude_none=True, indent=2))
+    output = q.model_dump_json(by_alias=True, exclude_none=True, indent=2)
+    _write_bytes_stdout(output.encode("utf-8"))
 
 
 # --- CLI ---
@@ -903,17 +951,14 @@ def validate_cmd() -> None:
 
 def read_composition_stdin() -> Composition:
     """Read a Composition JSON from stdin."""
-    if sys.stdin.isatty():
-        raise click.UsageError(
-            "No input on stdin. Pipe a composition or use 'sdc composition init'."
-        )
-    data = json.loads(sys.stdin.read())
+    data = json.loads(_read_stdin_bytes())
     return Composition.model_validate(data)
 
 
 def write_composition_stdout(c: Composition) -> None:
     """Write a Composition as JSON to stdout."""
-    click.echo(c.model_dump_json(by_alias=True, exclude_none=True, indent=2))
+    output = c.model_dump_json(by_alias=True, exclude_none=True, indent=2)
+    _write_bytes_stdout(output.encode("utf-8"))
 
 
 COMPOSITION_INIT_EPILOG = """
